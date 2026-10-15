@@ -1,0 +1,23 @@
+# Fichiers de build & runtime Nix
+result
+result-*
+.direnv/
+*.qcow2
+*.iso
+
+# Fichiers sensibles ou secrets locaux
+secrets/*.yaml
+!secrets/README.md
+*.age
+*.key
+*.pem
+*.token
+*.env
+*.log
+
+# Caches éditeurs et OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~

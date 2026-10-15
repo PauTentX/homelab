@@ -1,0 +1,112 @@
+services:
+  nut-exporter:
+    container_name: nut-exporter
+    image: ghcr.io/druggeri/nut_exporter:3.2.1
+    environment:
+      - NUT_EXPORTER_SERVER=${NUT_EXPORTER_SERVER}
+      - NUT_EXPORTER_USERNAME=${NUT_EXPORTER_USERNAME}
+      - NUT_EXPORTER_PASSWORD=${NUT_EXPORTER_PASSWORD}
+      - NUT_EXPORTER_VARIABLES=${NUT_EXPORTER_VARIABLES}
+    restart: unless-stopped
+
+  alertmanager:
+    container_name: alertmanager
+    image: prom/alertmanager:v0.34.1
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    ports:
+      - "9093:9093"
+    restart: unless-stopped
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./alertmanager/discord_webhook:/etc/alertmanager/discord_webhook:ro
+      - alertmanager-data:/alertmanager
+
+  blackbox-exporter:
+    cap_add:
+      - NET_RAW
+    container_name: blackbox-exporter
+    image: prom/blackbox-exporter:v0.28.0
+    privileged: true
+    restart: unless-stopped
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+
+  freebox-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile.freebox
+    container_name: freebox-exporter
+    environment:
+      - FREEBOX_URL=http://freebox.lan
+      - FREEBOX_APP_ID=homelab.grafana
+      - FREEBOX_APP_TOKEN=${FREEBOX_APP_TOKEN}
+      - PORT=9105
+    ports:
+      - "9105:9105"
+    restart: unless-stopped
+
+  grafana:
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      - GF_SECURITY_COOKIE_SAMESITE=lax
+    image: grafana/grafana:13.2.2
+    ports:
+      - "3030:3000"
+    restart: unless-stopped
+    volumes:
+      - ./grafana/data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards/json
+
+  node-exporter:
+    command:
+      - --path.rootfs=/host
+    container_name: node-exporter
+    image: prom/node-exporter:v1.12.1
+    network_mode: host
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - /:/host:ro,rslave
+
+  prometheus:
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    container_name: prometheus
+    image: prom/prometheus:v3.15.0
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./rules:/etc/prometheus/rules:ro
+      - ./prometheus-data:/prometheus
+
+  smart-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile.smart
+    container_name: smart-exporter
+    environment:
+      - PORT=9199
+    ports:
+      - "9199:9199"
+    restart: unless-stopped
+    volumes:
+      - ./ssh/id_ed25519:/root/.ssh/id_ed25519:ro
+
+volumes:
+  alertmanager-data: {}

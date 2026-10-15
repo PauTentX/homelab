@@ -1,0 +1,46 @@
+services:
+  discord-relay:
+    image: python:3.11-alpine
+    container_name: discord-n8n-relay
+    restart: unless-stopped
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}
+      - COMMAND=!status
+      - PYTHONUNBUFFERED=1
+    command:
+      - sh
+      - -c
+      - |
+        cat << 'EOF' > bot.py
+        import os, discord, requests
+
+        DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+        N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL")
+        COMMAND = os.getenv("COMMAND")
+
+        intents = discord.Intents.default()
+        intents.message_content = True
+        client = discord.Client(intents=intents)
+
+        @client.event
+        async def on_ready():
+            print(f"✅ Bot connected as {client.user}")
+            print(f"📡 Relaying '{COMMAND}' to {N8N_WEBHOOK_URL}")
+
+        @client.event
+        async def on_message(message):
+            if message.author.bot: return
+            if message.content.strip().lower() == COMMAND.lower():
+                print(f"🚀 Command received! Sending to n8n...")
+                try:
+                    requests.post(N8N_WEBHOOK_URL, json={"channelId": str(message.channel.id)}, timeout=5)
+                    print("✅ Sent to n8n!")
+                except Exception as e:
+                    print(f"❌ Failed to ping n8n: {e}")
+
+        client.run(DISCORD_TOKEN)
+        EOF
+        pip install discord.py requests > /dev/null
+        python bot.py
+networks: {}

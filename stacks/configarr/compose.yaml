@@ -1,0 +1,12 @@
+services:
+  configarr:
+    image: ghcr.io/raydak-labs/configarr:latest
+    container_name: configarr
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      - ./config:/data/configarr/
+      - ./dockerrepos:/app/repos
+      - ./custom/cfs:/app/cfs
+      - ./custom/templates:/app/templates
+networks: {}

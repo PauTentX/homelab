@@ -1,0 +1,26 @@
+# Configuration réseau Proxmox VE (Exemple Assaini)
+# Fichier source hôte : /etc/network/interfaces
+
+auto lo
+iface lo inet loopback
+
+# Interface physique primaire reliée au switch LAN
+auto enp4s0
+iface enp4s0 inet manual
+
+# Pont réseau principal (Bridge virtuel pour les conteneurs et VM)
+auto vmbr0
+iface vmbr0 inet static
+	address <PROXMOX_HOST_IP>/24
+	gateway <LAN_GATEWAY>
+	bridge-ports enp4s0
+	bridge-stp off
+	bridge-fd 0
+
+# Interface Wi-Fi optionnelle (désactivée par défaut)
+iface wlp3s0 inet manual
+
+# Serveurs DNS internes ou résolveurs sécurisés
+dns-nameservers 1.1.1.1 1.0.0.1
+
+source /etc/network/interfaces.d/*

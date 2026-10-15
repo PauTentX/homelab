@@ -1,0 +1,36 @@
+# Configuration Hermes Agent (Client PCPDL)
+# Pointe vers le backend LLM et l'infrastructure Homelab de Laurent sans exposer les clés d'admin en local.
+
+providers:
+  antigravity:
+    name: "Gemini Antigravity (Homelab)"
+    base_url: "http://192.168.1.100:5001/gemini-antigravity/v1"
+    api_key: "your_api_key_here"
+
+model:
+  default: "gemini-3.8-flash"
+  provider: "antigravity"
+
+agent:
+  name: "Hermes Antigravity"
+  language: "fr"
+  autonomous_execution: true
+  max_iterations: 20
+  memory:
+    enabled: true
+
+display:
+  interface: "cli"
+  language: "fr"
+  show_reasoning: true
+
+approvals:
+  mode: smart
+
+security:
+  redact_secrets: true
+
+compression:
+  enabled: true
+  threshold: 0.6
+  target_ratio: 0.25

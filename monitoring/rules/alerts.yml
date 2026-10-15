@@ -1,0 +1,194 @@
+groups:
+- name: infrastructure
+  rules:
+  - alert: CibleInjoignable
+    expr: up == 0
+    for: 1m
+    labels: {severity: critical}
+    annotations:
+      summary: "Exporter/cible KO : {{ $labels.job }}"
+      description: "Prometheus ne peut plus scraper {{ $labels.instance }} (job {{ $labels.job }}) depuis plus d'1 min."
+
+  - alert: HoteInjoignablePing
+    expr: probe_success{job="blackbox-network"} == 0
+    for: 2m
+    labels: {severity: critical}
+    annotations:
+      summary: "Ping KO : {{ $labels.instance }}"
+      description: "{{ $labels.instance }} ne répond plus à l'ICMP depuis 2 min."
+
+  - alert: ServiceHttpDown
+    expr: probe_success{job="blackbox-http"} == 0
+    for: 2m
+    labels: {severity: critical}
+    annotations:
+      summary: "Service HTTP KO : {{ $labels.instance }}"
+      description: "La sonde HTTP sur {{ $labels.instance }} échoue depuis 2 min."
+
+  - alert: CertificatSslExpire
+    expr: (probe_ssl_earliest_cert_expiry{job="blackbox-http"} - time()) < 14 * 86400 and probe_ssl_earliest_cert_expiry > 0
+    for: 10m
+    labels: {severity: warning}
+    annotations:
+      summary: "Certificat SSL proche de l'expiration : {{ $labels.instance }}"
+      description: "Expire dans {{ $value | humanizeDuration }}."
+
+  - alert: ConteneurProxmoxArrete
+    expr: pve_lxc_status == 0
+    for: 5m
+    labels: {severity: warning}
+    annotations:
+      summary: "LXC arrêté : {{ $labels.name }} ({{ $labels.vmid }})"
+      description: "Le conteneur {{ $labels.name }} est à l'arrêt depuis 5 min (arrêt volontaire ? sinon à investiguer)."
+
+  - alert: FreeboxWanDown
+    expr: freebox_connection_up == 0
+    for: 1m
+    labels: {severity: critical}
+    annotations:
+      summary: "Connexion WAN Freebox coupée"
+      description: "L'API Freebox rapporte la liaison FTTH comme non connectée."
+
+- name: stockage
+  rules:
+  - alert: ZpoolNonSain
+    expr: zpool_health != 1
+    for: 1m
+    labels: {severity: critical}
+    annotations:
+      summary: "Pool ZFS dégradé : {{ $labels.pool }}"
+      description: "Le pool {{ $labels.pool }} est en état {{ $labels.status }} (attendu ONLINE). Lancer `zpool status -v`."
+
+  - alert: ZpoolPresquePlein
+    expr: zpool_capacity_percent{pool="BacASable"} > 80
+    for: 10m
+    labels: {severity: warning}
+    annotations:
+      summary: "Pool {{ $labels.pool }} rempli à {{ $value }} %"
+      description: "Au-delà de ~80 %, ZFS fragmente et ralentit (copy-on-write). Purger ou étendre."
+
+  - alert: ZpoolCritiquePlein
+    expr: zpool_capacity_percent{pool="BacASable"} > 90
+    for: 5m
+    labels: {severity: critical}
+    annotations:
+      summary: "Pool {{ $labels.pool }} critique : {{ $value }} %"
+      description: "Risque de blocage d'écriture. Action immédiate requise."
+
+  - alert: ExporterZfsKo
+    expr: zfs_exporter_status != 1
+    for: 2m
+    labels: {severity: warning}
+    annotations:
+      summary: "zfs_exporter ne parvient plus à lire zpool"
+      description: "Les métriques ZFS ne sont plus fiables."
+
+  - alert: SmartDisqueMalsain
+    expr: smartmon_device_smart_healthy == 0
+    for: 1m
+    labels: {severity: critical}
+    annotations:
+      summary: "SMART FAILED : {{ $labels.disk }} ({{ $labels.instance }})"
+      description: "Le disque signale un état SMART non sain. Sauvegarder puis remplacer."
+
+  - alert: UsureNvmeElevee
+    expr: smart_ssd_percentage_used > 80
+    for: 30m
+    labels: {severity: warning}
+    annotations:
+      summary: "Usure NVMe {{ $value }} % : {{ $labels.model }} ({{ $labels.host }})"
+      description: "Le SSD approche de sa endurance nominale (Percentage Used)."
+
+  - alert: TemperatureNvmeElevee
+    expr: smart_ssd_temperature_celsius > 70
+    for: 5m
+    labels: {severity: warning}
+    annotations:
+      summary: "NVMe à {{ $value }} °C : {{ $labels.model }} ({{ $labels.host }})"
+      description: "Throttling probable au-delà de ~70-75 °C."
+
+  - alert: TemperatureHddElevee
+    expr: smart_hdd_temperature_celsius > 55 or freebox_disk_temperature_celsius > 55
+    for: 10m
+    labels: {severity: warning}
+    annotations:
+      summary: "Disque dur à {{ $value }} °C"
+      description: "Instance {{ $labels.instance }}, device {{ $labels.device }}{{ $labels.model }}."
+
+- name: ressources
+  rules:
+  - alert: CpuProxmoxTctlElevee
+    expr: node_hwmon_temp_celsius{chip="pci0000:00_0000:00:18_3",sensor="temp1"} > 90
+    for: 10m
+    labels: {severity: warning}
+    annotations:
+      summary: "Ryzen (EVA-002) à {{ $value }} °C"
+      description: "Tctl > 90 °C soutenu depuis 10 min : vérifier pâte thermique, poussière, ventilation, charge."
+
+  - alert: CpuSature
+    expr: 1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) > 0.9
+    for: 15m
+    labels: {severity: warning}
+    annotations:
+      summary: "CPU > 90 % sur {{ $labels.instance }}"
+      description: "Charge soutenue depuis 15 min."
+
+  - alert: MemoireSaturee
+    expr: 1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes > 0.92
+    for: 10m
+    labels: {severity: warning}
+    annotations:
+      summary: "RAM > 92 % sur {{ $labels.instance }}"
+      description: "MemAvailable très bas (hors cache)."
+
+  - alert: RacineProxmoxPleine
+    expr: node_filesystem_avail_bytes{mountpoint="/",instance="eva-002.lan:9100",fstype="ext4"} / node_filesystem_size_bytes{mountpoint="/",instance="eva-002.lan:9100",fstype="ext4"} < 0.10
+    for: 10m
+    labels: {severity: warning}
+    annotations:
+      summary: "Racine Proxmox : moins de 10 % libre"
+      description: "Le rootfs pve-root se remplit (logs, backups, ISO ?)."
+
+- name: automatisation
+  rules:
+  - alert: PipelineN8nKo
+    expr: n8n_job_hunter_status != 1
+    for: 5m
+    labels: {severity: warning}
+    annotations:
+      summary: "Pipeline alternance n8n en défaut"
+      description: "n8n_job_hunter_status != 1 : vérifier le workflow F4zoLuR2p8kAicQI."
+
+  - alert: ExporterHomeAssistantKo
+    expr: ha_exporter_status != 1
+    for: 5m
+    labels: {severity: warning}
+    annotations:
+      summary: "Home Assistant inaccessible pour l'exporter"
+      description: "Souvent un token tronqué / 401, ou HA arrêté."
+
+  - alert: QuotaIaHebdoFaible
+    expr: aiclient_quota_weekly_percent_remaining < 10
+    for: 5m
+    labels: {severity: warning}
+    annotations:
+      summary: "Quota Antigravity hebdo : {{ $value }} % restant"
+      description: "Le plafond hebdomadaire sera bientôt atteint."
+
+  - alert: QuotaIa5hEpuise
+    expr: aiclient_quota_5h_percent_remaining < 5
+    for: 2m
+    labels: {severity: warning}
+    annotations:
+      summary: "Quota Antigravity 5h : {{ $value }} % restant"
+      description: "Fenêtre glissante 5 h presque épuisée."
+
+- name: prometheus
+  rules:
+  - alert: PrometheusReloadKo
+    expr: prometheus_config_last_reload_successful == 0
+    for: 1m
+    labels: {severity: critical}
+    annotations:
+      summary: "Rechargement config Prometheus en échec"
+      description: "La config chargée n'est plus celle du fichier."

@@ -1,0 +1,10 @@
+# Exemple de configuration sops avec clés age publiques factices / placeholders
+keys:
+  - &user_admin age100000000000000000000000000000000000000000000000000000000000000
+  - &host_pcpdl age100000000000000000000000000000000000000000000000000000000000001
+creation_rules:
+  - path_regex: secrets/.*\.yaml$
+    key_groups:
+    - age:
+      - *user_admin
+      - *host_pcpdl

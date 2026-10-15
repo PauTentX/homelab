@@ -1,0 +1,11 @@
+services:
+  nadeko:
+    image: ghcr.io/nadeko-bot/nadekobot:v6
+    container_name: nadeko
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Paris
+      bot_token: ${BOT_TOKEN}
+    volumes:
+      - ./data:/app/data
+networks: {}

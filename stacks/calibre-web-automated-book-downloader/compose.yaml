@@ -1,0 +1,17 @@
+services:
+  calibre-web-automated-book-downloader:
+    image: ghcr.io/calibrain/calibre-web-automated-book-downloader:latest
+    container_name: calibre-web-automated-book-downloader
+    environment:
+      - FLASK_PORT=8084
+      - FLASK_DEBUG=false
+      - BOOK_LANGUAGE=fr
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+    volumes:
+      - /data/importlivre/:/cwa-book-ingest
+      - /local/scripts/custom_script.sh:/data/script.sh
+networks: {}
