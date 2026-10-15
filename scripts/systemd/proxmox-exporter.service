@@ -1,0 +1,13 @@
+[Unit]
+Description=Proxmox VE Metrics Exporter for Prometheus
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 /usr/local/bin/proxmox_exporter.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+groups:
+- name: hermes-ia
+  rules:
+  - alert: HermesCoutJournalierEleve
+    expr: hermes_cost_usd_24h > 5
+    for: 5m
+    labels: {severity: warning}
+    annotations:
+      summary: "Hermes : conso Copilot élevée sur 24h"
+      description: "{{ $value | printf \"%.2f\" }} $ estimés sur 24h (1 $ = 100 crédits). Pense à déléguer aux workers Gemini ou /new."
+  - alert: HermesExporterDown
+    expr: up{job="hermes-tokens"} == 0
+    for: 5m
+    labels: {severity: warning}
+    annotations:
+      summary: "Exporter Hermes injoignable (LXC 105 :9180)"

@@ -1,0 +1,13 @@
+services:
+  gitea-runner:
+    image: gitea/act_runner:latest
+    container_name: gitea-runner
+    restart: unless-stopped
+    environment:
+      GITEA_INSTANCE_URL: http://gitea.lan:3000
+      GITEA_RUNNER_REGISTRATION_TOKEN: ${GITEA_RUNNER_REGISTRATION_TOKEN}
+      GITEA_RUNNER_NAME: homelab-runner-01
+      GITEA_RUNNER_LABELS: ubuntu-latest:docker://node:22-bookworm,node-20:docker://node:22-bookworm,ubuntu-22.04:docker://node:22-bookworm
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/data

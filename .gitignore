@@ -1,0 +1,22 @@
+# Environment and sensitive secrets
+*.env
+.env*
+!.env.example
+
+# Temporary files and logs
+*.log
+*.tmp
+*.bak*
+__pycache__/
+*.pyc
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Backup and dump archives
+*.tar
+*.tar.gz
+*.tar.zst
+*.sql
+*.dump

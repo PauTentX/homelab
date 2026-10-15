@@ -1,0 +1,26 @@
+groups:
+- name: onduleur
+  rules:
+  - alert: OnduleurSurBatterie
+    expr: network_ups_tools_ups_status{flag="OB"} == 1
+    for: 10s
+    labels: {severity: critical}
+    annotations:
+      summary: "Coupure secteur : l'onduleur est sur batterie"
+      description: "Arrêt propre automatique planifié à 50 % de batterie restante ou 10 minutes d'autonomie."
+
+  - alert: OnduleurBatterieFaible
+    expr: network_ups_tools_ups_status{flag="LB"} == 1
+    for: 0m
+    labels: {severity: critical}
+    annotations:
+      summary: "Onduleur : batterie critique, coupure imminente"
+      description: "NUT déclenche l'extinction d'urgence immédiate des nœuds."
+
+  - alert: OnduleurSurcharge
+    expr: network_ups_tools_ups_load > 80
+    for: 5m
+    labels: {severity: warning}
+    annotations:
+      summary: "Onduleur chargé à {{ $value }} %"
+      description: "Surcharge détectée : au-delà de 80 %, l'autonomie s'effondre."

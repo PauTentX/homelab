@@ -1,0 +1,2399 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 1250000000,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#1F77B4",
+                "value": null
+              },
+              {
+                "color": "#73BF69",
+                "value": 50000000
+              },
+              {
+                "color": "#FADE2A",
+                "value": 250000000
+              },
+              {
+                "color": "#FF9830",
+                "value": 625000000
+              }
+            ]
+          },
+          "unit": "Bps"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 6
+      },
+      "id": 101,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "freebox_rate_down_bytes_per_second",
+          "legendFormat": "📥 WAN Down (10G)",
+          "refId": "A"
+        }
+      ],
+      "title": "📥 WAN Down",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 112500000,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#8F3BB8",
+                "value": null
+              },
+              {
+                "color": "#73BF69",
+                "value": 12500000
+              },
+              {
+                "color": "#FADE2A",
+                "value": 37500000
+              },
+              {
+                "color": "#FF9830",
+                "value": 75000000
+              }
+            ]
+          },
+          "unit": "Bps"
+        }
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 6
+      },
+      "id": 102,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "freebox_rate_up_bytes_per_second",
+          "legendFormat": "📤 WAN Up (1G)",
+          "refId": "A"
+        }
+      ],
+      "title": "📤 WAN Up",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 70
+              },
+              {
+                "color": "#FF9830",
+                "value": 85
+              },
+              {
+                "color": "#F2495C",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "id": 201,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{instance=\"eva-002.lan:9100\",mode=\"idle\"}[1m])) * 100)",
+          "legendFormat": "⚡ Proxmox CPU (Ryzen 7)",
+          "refId": "A"
+        }
+      ],
+      "title": "⚡ Proxmox CPU",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 70
+              },
+              {
+                "color": "#FF9830",
+                "value": 85
+              },
+              {
+                "color": "#F2495C",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "id": 203,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{instance=\"truenas.lan:9100\",mode=\"idle\"}[1m])) * 100)",
+          "legendFormat": "⚡ TrueNAS CPU",
+          "refId": "A"
+        }
+      ],
+      "title": "⚡ TrueNAS CPU",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#F2495C",
+                "value": null
+              },
+              {
+                "color": "#FF9830",
+                "value": 50
+              },
+              {
+                "color": "#73BF69",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "id": 303,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "network_ups_tools_battery_charge",
+          "legendFormat": "Charge",
+          "refId": "A"
+        }
+      ],
+      "title": "🔋 Batterie UPS",
+      "type": "stat",
+      "description": "Charge de la batterie Eaton Ellipse ECO 650 (NUT sur EVA-002). Alarme active = batterie usée à remplacer."
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 250
+              },
+              {
+                "color": "#FF9830",
+                "value": 400
+              },
+              {
+                "color": "#F2495C",
+                "value": 600
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "id": 307,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "scalar(network_ups_tools_ups_realpower) + sum(ha_clean_power_watts{device=~\"PC Laurent|Purificateur Dyson\"})",
+          "legendFormat": "Total Net",
+          "refId": "A"
+        }
+      ],
+      "title": "⚡ Conso Totale",
+      "type": "stat",
+      "description": "Puissance totale réelle nette : Onduleur Eaton (qui alimente Proxmox & TrueNAS) + PC Laurent + Dyson"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 75
+              },
+              {
+                "color": "#FF9830",
+                "value": 85
+              },
+              {
+                "color": "#F2495C",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      },
+      "id": 202,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "(1 - (node_memory_MemAvailable_bytes{instance=\"eva-002.lan:9100\"} / node_memory_MemTotal_bytes{instance=\"eva-002.lan:9100\"})) * 100",
+          "legendFormat": "🧠 Proxmox RAM (64 Go)",
+          "refId": "A"
+        }
+      ],
+      "title": "🧠 Proxmox RAM",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 75
+              },
+              {
+                "color": "#FF9830",
+                "value": 85
+              },
+              {
+                "color": "#F2495C",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      },
+      "id": 204,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "(1 - (node_memory_MemAvailable_bytes{instance=\"truenas.lan:9100\"} / node_memory_MemTotal_bytes{instance=\"truenas.lan:9100\"})) * 100",
+          "legendFormat": "🧠 TrueNAS RAM",
+          "refId": "A"
+        }
+      ],
+      "title": "🧠 TrueNAS RAM",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 26
+              },
+              {
+                "color": "#FF9830",
+                "value": 30
+              }
+            ]
+          },
+          "unit": "celsius"
+        }
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      },
+      "id": 304,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "ha_clean_temperature_celsius{room=~\"Salon|Véranda|Cuisine\"}",
+          "legendFormat": "{{room}}",
+          "refId": "A"
+        }
+      ],
+      "title": "☀️ Espace Vie & Séjour",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 24
+              },
+              {
+                "color": "#FF9830",
+                "value": 28
+              }
+            ]
+          },
+          "unit": "celsius"
+        }
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      },
+      "id": 305,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "ha_clean_temperature_celsius{room=~\"Chambre.*|Dyson.*\"}",
+          "legendFormat": "{{room}}",
+          "refId": "A"
+        }
+      ],
+      "title": "🌙 Chambres & Air",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Liaison"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "color": "#E02F44",
+                        "text": "⬤ DOWN"
+                      },
+                      "1": {
+                        "color": "#56A64B",
+                        "text": "⬤ UP"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Vitesse"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "—"
+                      },
+                      "10": {
+                        "text": "10M"
+                      },
+                      "100": {
+                        "color": "#FADE2A",
+                        "text": "100M"
+                      },
+                      "1000": {
+                        "color": "#73BF69",
+                        "text": "1 GbE"
+                      },
+                      "10000": {
+                        "color": "#3274D9",
+                        "text": "10G SFP+"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 8,
+        "h": 4
+      },
+      "id": 103,
+      "options": {
+        "footer": {
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Vitesse"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "freebox_switch_port_link",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "freebox_switch_port_speed_mbps",
+          "format": "table",
+          "instant": true,
+          "refId": "B"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "freebox_switch_port_connected_devices",
+          "format": "table",
+          "instant": true,
+          "refId": "C"
+        }
+      ],
+      "title": "🔌 Ports Switch Ethernet Freebox",
+      "transformations": [
+        {
+          "id": "seriesToColumns",
+          "options": {
+            "byField": "name"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "id": true,
+              "id 1": true,
+              "id 2": true,
+              "__name__": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "instance": true,
+              "instance 1": true,
+              "job": true,
+              "job 1": true
+            },
+            "renameByName": {
+              "name": "Port Switch",
+              "Value #A": "Liaison",
+              "Value #B": "Vitesse",
+              "Value #C": "Appareils"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "pointSize": 4,
+            "showPoints": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ms",
+          "min": 0
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
+      "id": 206,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "asc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "probe_duration_seconds{job=\"blackbox-network\",instance=\"freebox.lan\"} * 1000",
+          "legendFormat": "Freebox Gateway",
+          "refId": "A"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "probe_duration_seconds{job=\"blackbox-network\",instance=\"eva-002.lan\"} * 1000",
+          "legendFormat": "Proxmox EVA-002",
+          "refId": "B"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "probe_duration_seconds{job=\"blackbox-network\",instance=\"truenas.lan\"} * 1000",
+          "legendFormat": "TrueNAS EVA-001",
+          "refId": "C"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "probe_duration_seconds{job=\"blackbox-network\",instance=\"dockge.lan\"} * 1000",
+          "legendFormat": "Dockge LXC 105",
+          "refId": "D"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "probe_duration_seconds{job=\"blackbox-network\",instance=\"1.1.1.1\"} * 1000",
+          "legendFormat": "Cloudflare (WAN)",
+          "refId": "E"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "probe_duration_seconds{job=\"blackbox-network\",instance=\"8.8.8.8\"} * 1000",
+          "legendFormat": "Google DNS (WAN)",
+          "refId": "F"
+        }
+      ],
+      "title": "⚡ Ping & Latence en ms",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 75
+              },
+              {
+                "color": "#FF9830",
+                "value": 85
+              },
+              {
+                "color": "#E02F44",
+                "value": 92
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "BacASable ZFS (7.3 To)"
+            },
+            "properties": [
+              {
+                "id": "max",
+                "value": 7988639170560
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Freebox Disque 1 (2 To)"
+            },
+            "properties": [
+              {
+                "id": "max",
+                "value": 1960000000000
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Freebox Disque 2 (1 To)"
+            },
+            "properties": [
+              {
+                "id": "max",
+                "value": 984290000000
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Freebox USB (1 To)"
+            },
+            "properties": [
+              {
+                "id": "max",
+                "value": 984290000000
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 10,
+        "w": 8,
+        "h": 5
+      },
+      "id": 205,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "showUnfilled": true,
+        "valueMode": "text"
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "zpool_alloc_bytes{pool=\"BacASable\"}",
+          "legendFormat": "BacASable ZFS (7.3 To)",
+          "refId": "A"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "freebox_disk_partition_used_bytes{label=\"Disque 1\"}",
+          "legendFormat": "Freebox Disque 1 (2 To)",
+          "refId": "B"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "freebox_disk_partition_used_bytes{label=\"Disque 2\"}",
+          "legendFormat": "Freebox Disque 2 (1 To)",
+          "refId": "C"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "freebox_disk_partition_used_bytes{label=\"Freebox\"}",
+          "legendFormat": "Freebox USB (1 To)",
+          "refId": "D"
+        }
+      ],
+      "title": "💾 Stockage — Espace Occupé",
+      "type": "bargauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 12
+          },
+          "unit": "watt",
+          "min": 0
+        }
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
+      "id": 306,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "ha_clean_power_watts",
+          "legendFormat": "{{device}}",
+          "refId": "A"
+        }
+      ],
+      "title": "⚡ Puissance Électrique par Appareil",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#F2495C",
+                "value": null
+              },
+              {
+                "color": "#FF9830",
+                "value": 10
+              },
+              {
+                "color": "#FADE2A",
+                "value": 20
+              },
+              {
+                "color": "#73BF69",
+                "value": 40
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 15,
+        "w": 4,
+        "h": 3
+      },
+      "id": 3033,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "aiclient_quota_5h_percent_remaining",
+          "legendFormat": "Quota 5h Restant",
+          "refId": "A"
+        }
+      ],
+      "title": "⏳ Gemini 5h",
+      "type": "gauge",
+      "description": "Réinitialisation complète à 03h49 (dans 5h)"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#F2495C",
+                "value": null
+              },
+              {
+                "color": "#FF9830",
+                "value": 10
+              },
+              {
+                "color": "#FADE2A",
+                "value": 20
+              },
+              {
+                "color": "#73BF69",
+                "value": 40
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 15,
+        "w": 4,
+        "h": 3
+      },
+      "id": 3032,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "aiclient_quota_weekly_percent_remaining",
+          "legendFormat": "Quota Hebdo Restant",
+          "refId": "A"
+        }
+      ],
+      "title": "📅 Gemini Hebdo",
+      "type": "gauge",
+      "description": "Réinitialisation complète mercredi à 09h35"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "pointSize": 4,
+            "showPoints": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "Bps",
+          "min": 0
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 8,
+        "h": 9
+      },
+      "id": 104,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "freebox_rate_down_bytes_per_second",
+          "legendFormat": "Internet ⬇ Down",
+          "refId": "A"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "freebox_rate_up_bytes_per_second",
+          "legendFormat": "Internet ⬆ Up",
+          "refId": "B"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "rate(freebox_switch_port_rx_bytes_total{id=\"9999\"}[1m])",
+          "legendFormat": "LAN SFP+ 10G",
+          "refId": "C"
+        }
+      ],
+      "title": "📈 Flux Bande Passante WAN & LAN 10G",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 5000
+              },
+              {
+                "color": "#FF9830",
+                "value": 15000
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "id": 301,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "aiclient_requests_today",
+          "legendFormat": "Reqs",
+          "refId": "A"
+        }
+      ],
+      "title": "🤖 Reqs / Jour",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 50000000
+              },
+              {
+                "color": "#FF9830",
+                "value": 100000000
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "id": 302,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "aiclient_tokens_today",
+          "legendFormat": "Tokens",
+          "refId": "A"
+        }
+      ],
+      "title": "🧮 Tokens / Jour",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "id": 401,
+      "title": "🚨 Alertes actives",
+      "type": "stat",
+      "description": "Alertes Prometheus en état firing (détail : Alertmanager :9093)",
+      "gridPos": {
+        "x": 16,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#F2495C",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Aucune ✔"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "count(ALERTS{alertstate=\"firing\",alertname!=\"Watchdog\"}) or vector(0)",
+          "refId": "A",
+          "legendFormat": "🚨 Alertes actives"
+        }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "id": 402,
+      "title": "🛡️ Santé ZFS",
+      "type": "stat",
+      "description": "Minimum de zpool_health sur tous les pools (1 = ONLINE)",
+      "gridPos": {
+        "x": 20,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#F2495C",
+                "value": null
+              },
+              {
+                "color": "#73BF69",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "ONLINE"
+                },
+                "0": {
+                  "text": "DÉGRADÉ"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "min(zpool_health)",
+          "refId": "A",
+          "legendFormat": "🛡️ Santé ZFS"
+        }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 200,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#F2495C",
+                "value": null
+              },
+              {
+                "color": "#FF9830",
+                "value": 20
+              },
+              {
+                "color": "#FADE2A",
+                "value": 60
+              },
+              {
+                "color": "#73BF69",
+                "value": 120
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 21,
+        "w": 4,
+        "h": 3
+      },
+      "id": 3010,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "copilot_premium_remaining",
+          "legendFormat": "Requêtes Premium Restantes",
+          "refId": "A"
+        }
+      ],
+      "title": "🐙 Copilot Premium",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "1": {
+                  "color": "#73BF69",
+                  "index": 0,
+                  "text": "ILLIMITÉ (Actif)"
+                },
+                "0": {
+                  "color": "#F2495C",
+                  "index": 1,
+                  "text": "RESTREINT"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#F2495C",
+                "value": null
+              },
+              {
+                "color": "#73BF69",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 4,
+        "h": 3
+      },
+      "id": 3011,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "copilot_chat_unlimited",
+          "legendFormat": "Chat & Éditeur",
+          "refId": "A"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "copilot_completions_unlimited",
+          "legendFormat": "Complétion Code",
+          "refId": "B"
+        }
+      ],
+      "title": "⚡ Copilot Chat",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "id": 403,
+      "title": "💽 Usure NVMe max",
+      "type": "stat",
+      "description": "Percentage Used SMART le plus élevé (Proxmox + TrueNAS)",
+      "gridPos": {
+        "x": 16,
+        "y": 21,
+        "w": 4,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 50
+              },
+              {
+                "color": "#FF9830",
+                "value": 70
+              },
+              {
+                "color": "#F2495C",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "max(smart_ssd_percentage_used)",
+          "refId": "A",
+          "legendFormat": "💽 Usure NVMe max"
+        }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "id": 404,
+      "title": "🌡️ Temp NVMe max",
+      "type": "stat",
+      "description": "",
+      "gridPos": {
+        "x": 20,
+        "y": 21,
+        "w": 4,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 60
+              },
+              {
+                "color": "#FF9830",
+                "value": 70
+              },
+              {
+                "color": "#F2495C",
+                "value": 75
+              }
+            ]
+          },
+          "unit": "celsius",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "max(smart_ssd_temperature_celsius)",
+          "refId": "A",
+          "legendFormat": "🌡️ Temp NVMe max"
+        }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#5794F2",
+                "value": 3600
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 24,
+        "w": 4,
+        "h": 3
+      },
+      "id": 3012,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "clamp_min(copilot_reset_timestamp_seconds - time(), 0)",
+          "legendFormat": "Copilot Mensuel",
+          "refId": "A"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "aiclient_quota_weekly_reset_seconds",
+          "legendFormat": "Antigravity Hebdo",
+          "refId": "B"
+        }
+      ],
+      "title": "🔄 Reset Quotas",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "1": {
+                  "color": "#73BF69",
+                  "index": 0,
+                  "text": "OPÉRATIONNEL"
+                },
+                "0": {
+                  "color": "#F2495C",
+                  "index": 1,
+                  "text": "DOWN / HORS LIGNE"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#F2495C",
+                "value": null
+              },
+              {
+                "color": "#73BF69",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 4,
+        "h": 3
+      },
+      "id": 3013,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "copilot_health",
+          "legendFormat": "GitHub Copilot API",
+          "refId": "A"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "aiclient_health",
+          "legendFormat": "AIClient2API (Gemini)",
+          "refId": "B"
+        }
+      ],
+      "title": "🛡️ Santé IA",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "id": 405,
+      "title": "🔥 Tctl Ryzen (EVA-002)",
+      "type": "stat",
+      "description": "",
+      "gridPos": {
+        "x": 16,
+        "y": 24,
+        "w": 4,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 65
+              },
+              {
+                "color": "#FF9830",
+                "value": 80
+              },
+              {
+                "color": "#F2495C",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "celsius",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=\"temp1\"}",
+          "refId": "A",
+          "legendFormat": "🔥 Tctl Ryzen (EVA-002)"
+        }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "id": 406,
+      "title": "⏳ Prochain scan n8n",
+      "type": "stat",
+      "description": "Compte à rebours avant le prochain déclenchement du workflow alternance (cadence 2h)",
+      "gridPos": {
+        "x": 20,
+        "y": 24,
+        "w": 4,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "n8n_job_hunter_next_run_minutes * 60",
+          "refId": "A",
+          "legendFormat": "⏳ Prochain scan n8n"
+        }
+      ]
+    },
+    {
+      "id": 3034,
+      "type": "row",
+      "title": "🤖 Hermes — Consommation IA (Copilot)",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 24,
+        "h": 1
+      },
+      "targets": [],
+      "description": "Source : hermes_token_exporter (LXC 105 :9180), lecture de state.db. Coût estimé avec les tarifs GitHub Copilot.",
+      "tags": [
+        "hermes-tokens"
+      ],
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 3035,
+      "type": "stat",
+      "title": "💸 Coût 24 h (Copilot)",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "hermes_cost_usd_24h",
+          "legendFormat": "24h",
+          "refId": "A"
+        }
+      ],
+      "description": "Coût estimé des sessions Copilot démarrées depuis 24 h. 1 $ = 100 crédits IA.",
+      "tags": [
+        "hermes-tokens"
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FF9830",
+                "value": 2
+              },
+              {
+                "color": "#F2495C",
+                "value": 5
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 3036,
+      "type": "stat",
+      "title": "🔥 Session la plus chère (24 h)",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 4,
+        "y": 28,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "hermes_session_max_cost_usd",
+          "legendFormat": "max",
+          "refId": "A"
+        }
+      ],
+      "description": "Coût de la session Copilot la plus chère sur 24 h. Le plugin token-guard alerte dans le chat à 0,5/1/2/5/10 $.",
+      "tags": [
+        "hermes-tokens"
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FF9830",
+                "value": 1
+              },
+              {
+                "color": "#F2495C",
+                "value": 3
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 3037,
+      "type": "stat",
+      "title": "💰 Coût total cumulé",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 8,
+        "y": 28,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "sum(hermes_cost_usd_total)",
+          "legendFormat": "total",
+          "refId": "A"
+        }
+      ],
+      "description": "Somme historique des coûts estimés (providers facturables).",
+      "tags": [
+        "hermes-tokens"
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 3038,
+      "type": "piechart",
+      "title": "🧠 Coût par modèle",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "sum by (model) (hermes_cost_usd_total)",
+          "legendFormat": "{{model}}",
+          "refId": "A"
+        }
+      ],
+      "description": "Répartition du coût cumulé par modèle.",
+      "tags": [
+        "hermes-tokens"
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2
+        }
+      }
+    },
+    {
+      "id": 3039,
+      "type": "timeseries",
+      "title": "📈 Coût 24 h glissantes",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "hermes_cost_usd_24h",
+          "legendFormat": "coût 24h",
+          "refId": "A"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "hermes_session_max_cost_usd",
+          "legendFormat": "session max",
+          "refId": "B"
+        }
+      ],
+      "description": "Évolution du coût glissant et de la session la plus chère.",
+      "tags": [
+        "hermes-tokens"
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {
+            "fillOpacity": 15
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 3040,
+      "type": "bargauge",
+      "title": "🔢 Tokens par modèle (entrée / sortie)",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "sum by (model) (hermes_input_tokens_total)",
+          "legendFormat": "{{model}} in",
+          "refId": "A"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "sum by (model) (hermes_output_tokens_total)",
+          "legendFormat": "{{model}} out",
+          "refId": "B"
+        }
+      ],
+      "description": "Tokens cumulés. Le cache lu est exclu (facturé 10–20× moins cher).",
+      "tags": [
+        "hermes-tokens"
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 3041,
+      "type": "table",
+      "title": "📋 Sessions par source / modèle",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 12,
+        "y": 36,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "sum by (source, model) (hermes_sessions_total)",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "description": "Nombre de sessions par plateforme (desktop, discord, api_server…) et par modèle.",
+      "tags": [
+        "hermes-tokens"
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "lastNotNull"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": [
+    "homelab",
+    "noc",
+    "v26",
+    "copilot",
+    "ultrawide"
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m"
+    ]
+  },
+  "timezone": "browser",
+  "title": "Homelab Network & Infrastructure Observability",
+  "uid": "bf6b3024-932a-4f81-a1ef-0408b01d0c48",
+  "version": 34
+}

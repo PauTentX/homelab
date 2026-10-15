@@ -1,0 +1,30 @@
+groups:
+- name: puissance
+  interval: 30s
+  rules:
+  # Puissance mesurée (prise Zigbee du mini-PC Proxmox EVA-002)
+  - record: pve:node_power_watts
+    expr: max(ha_clean_power_watts{device="Mini PC Proxmox"})
+  # Socle « au repos » estimé = 5e percentile des 3 derniers jours
+  - record: pve:node_idle_power_watts
+    expr: quantile_over_time(0.05, max(ha_clean_power_watts{device="Mini PC Proxmox"})[3d:5m])
+  # Cœurs consommés par invité (LXC + VM) sur 2 min
+  - record: pve:guest_cores_used
+    expr: |
+      label_replace(rate(pve_lxc_cpu_seconds_total[2m]), "type", "lxc", "vmid", ".*")
+      or
+      label_replace(rate(pve_qemu_cpu_seconds_total[2m]), "type", "vm", "vmid", ".*")
+  # RAM utilisée par invité
+  - record: pve:guest_mem_bytes
+    expr: |
+      label_replace(pve_lxc_memory_used_bytes, "type", "lxc", "vmid", ".*")
+      or
+      label_replace(pve_qemu_memory_used_bytes, "type", "vm", "vmid", ".*")
+  - record: pve:node_dynamic_power_watts
+    expr: clamp_min(pve:node_power_watts - pve:node_idle_power_watts, 0)
+  # Modèle mathématique : répartition du socle fixe au prorata RAM, part dynamique au prorata CPU
+  - record: pve:guest_power_watts
+    expr: |
+      (pve:guest_mem_bytes * scalar(pve:node_idle_power_watts) / scalar(sum(pve:guest_mem_bytes)))
+      + on(vmid, name, type)
+      (pve:guest_cores_used * scalar(pve:node_dynamic_power_watts) / scalar(clamp_min(sum(pve:guest_cores_used), 0.001)))
