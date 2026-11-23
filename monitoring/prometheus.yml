@@ -24,6 +24,8 @@ scrape_configs:
       - targets: ['truenas.lan:9156']
 
   - job_name: 'smart-homelab'
+    scrape_interval: 30s
+    scrape_timeout: 25s
     static_configs:
       - targets: ['smart-exporter:9199']
 
@@ -51,7 +53,7 @@ scrape_configs:
       - targets:
         - freebox.lan    # Freebox Gateway
         - eva-002.lan     # EVA-002 (Proxmox VE)
-        - truenas.lan     # EVA-001 (TrueNAS Scale)
+        - truenas.lan     # TrueNAS SCALE
         - npmplus.lan    # NPM Plus (LXC 110)
         - dockge.lan    # Dockge / n8n / AI (LXC 105)
         - gitea.lan     # Gitea (LXC 132)
@@ -74,7 +76,7 @@ scrape_configs:
     static_configs:
       - targets:
         - http://dockge.lan:5678/healthz     # n8n
-        - http://gitea.lan:3000/api/v1/version # Gitea
+        - http://gitea.lan:3000/api/healthz # Gitea
         - http://astro.lan:8080               # Astro Website
         - https://laurenttailliez.dev            # Site public WAN
     relabel_configs:
@@ -96,3 +98,43 @@ scrape_configs:
     scrape_interval: 30s
     static_configs:
       - targets: ["dockge.lan:9180"]
+
+  - job_name: 'exportarr-radarr'
+    scrape_interval: 60s
+    scrape_timeout: 30s
+    static_configs:
+      - targets: ['exportarr-radarr:9707']
+        labels:
+          instance: 'radarr'
+
+  - job_name: 'exportarr-sonarr'
+    scrape_interval: 60s
+    scrape_timeout: 30s
+    static_configs:
+      - targets: ['exportarr-sonarr:9708']
+        labels:
+          instance: 'sonarr'
+
+  - job_name: 'exportarr-lidarr'
+    scrape_interval: 60s
+    scrape_timeout: 30s
+    static_configs:
+      - targets: ['exportarr-lidarr:9709']
+        labels:
+          instance: 'lidarr'
+
+  - job_name: 'exportarr-prowlarr'
+    scrape_interval: 60s
+    scrape_timeout: 30s
+    static_configs:
+      - targets: ['exportarr-prowlarr:9710']
+        labels:
+          instance: 'prowlarr'
+
+  - job_name: 'qbittorrent'
+    scrape_interval: 30s
+    scrape_timeout: 20s
+    static_configs:
+      - targets: ['qbittorrent-exporter:8000']
+        labels:
+          instance: 'qbittorrent'

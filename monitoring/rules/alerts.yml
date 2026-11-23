@@ -34,7 +34,7 @@ groups:
       description: "Expire dans {{ $value | humanizeDuration }}."
 
   - alert: ConteneurProxmoxArrete
-    expr: pve_lxc_status == 0
+    expr: pve_lxc_status{name!~"tpl-.*"} == 0
     for: 5m
     labels: {severity: warning}
     annotations:
@@ -125,16 +125,11 @@ groups:
       summary: "Ryzen (EVA-002) à {{ $value }} °C"
       description: "Tctl > 90 °C soutenu depuis 10 min : vérifier pâte thermique, poussière, ventilation, charge."
 
-  - alert: CpuSature
-    expr: 1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) > 0.9
-    for: 15m
-    labels: {severity: warning}
-    annotations:
-      summary: "CPU > 90 % sur {{ $labels.instance }}"
-      description: "Charge soutenue depuis 15 min."
-
+  # CpuSature retiree le 2026-11-15 : les compilations sur EVA-002 saturent
+  # le CPU de facon legitime (434 min de firing en 7 j = bruit sans valeur
+  # d action). La protection thermique reste via CpuProxmoxTctlElevee (Tctl>90C).
   - alert: MemoireSaturee
-    expr: 1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes > 0.92
+    expr: 1 - (node_memory_MemAvailable_bytes + (clamp_min(node_zfs_arc_size - node_zfs_arc_c_min, 0) or (0 * node_memory_MemAvailable_bytes))) / node_memory_MemTotal_bytes > 0.92
     for: 10m
     labels: {severity: warning}
     annotations:

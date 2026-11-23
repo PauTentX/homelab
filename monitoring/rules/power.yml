@@ -2,7 +2,7 @@ groups:
 - name: puissance
   interval: 30s
   rules:
-  # Puissance mesurée (prise Zigbee du mini-PC Proxmox EVA-002)
+  # Puissance mesurée (prise Zigbee du mini-PC Proxmox)
   - record: pve:node_power_watts
     expr: max(ha_clean_power_watts{device="Mini PC Proxmox"})
   # Socle « au repos » estimé = 5e percentile des 3 derniers jours
@@ -22,7 +22,7 @@ groups:
       label_replace(pve_qemu_memory_used_bytes, "type", "vm", "vmid", ".*")
   - record: pve:node_dynamic_power_watts
     expr: clamp_min(pve:node_power_watts - pve:node_idle_power_watts, 0)
-  # Modèle mathématique : répartition du socle fixe au prorata RAM, part dynamique au prorata CPU
+  # Modèle : socle réparti au prorata de la RAM, part dynamique au prorata du CPU
   - record: pve:guest_power_watts
     expr: |
       (pve:guest_mem_bytes * scalar(pve:node_idle_power_watts) / scalar(sum(pve:guest_mem_bytes)))

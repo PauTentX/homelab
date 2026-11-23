@@ -1,6 +1,6 @@
 services:
   umami-db:
-    image: postgres:16-alpine
+    image: postgres:16.15-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
     container_name: umami-db
     restart: unless-stopped
     environment:
@@ -18,7 +18,7 @@ services:
       - umami-net
 
   umami:
-    image: ghcr.io/umami-software/umami:postgresql-latest
+    image: ghcr.io/umami-software/umami:3.4.0@sha256:85909afc45bdcda1917394594a087421fdbb05610fded0fa9f6fb861abb2f367
     container_name: umami
     restart: unless-stopped
     ports:

@@ -1,6 +1,6 @@
 services:
   n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n:2.44.6@sha256:d02752c6ab446ae9db8deec2f9cc887c378f77cdcad31650814df936b7386dfb
     container_name: n8n
     restart: unless-stopped
     ports:
@@ -12,6 +12,8 @@ services:
       - NODE_ENV=production
       - WEBHOOK_URL=http://dockge.lan:5678/
       - GENERIC_TIMEZONE=Europe/Paris
+      # Écart connu : cookie non sécurisé tant que l'accès reste en HTTP sur le LAN.
+      # Cible : n8n derrière NPM Plus en HTTPS, puis suppression de cette ligne.
       - N8N_SECURE_COOKIE=false
     volumes:
       - n8n_data:/home/node/.n8n

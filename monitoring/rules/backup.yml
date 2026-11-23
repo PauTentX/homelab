@@ -1,0 +1,26 @@
+groups:
+- name: backup-vzdump
+  rules:
+  - alert: BackupJobEchoue
+    expr: pve_backup_last_status == 0 and (time() - pve_backup_last_run_timestamp_seconds) > 600
+    for: 10m
+    labels: {severity: critical}
+    annotations:
+      summary: "Dernier backup vzdump en échec"
+      description: "Le dernier job vzdump ({{ $labels.job }}) s'est terminé en erreur. Voir /var/log/pve/tasks/ sur EVA-002."
+
+  - alert: BackupFsReadonly
+    expr: pve_backup_fs_readonly == 1
+    for: 2m
+    labels: {severity: critical}
+    annotations:
+      summary: "FS de backup /mnt/backup2to en lecture seule"
+      description: "Le test d'écriture échoue sur le fs de backup (probablement emergency_ro après une erreur I/O sur sda). Le prochain vzdump échouera."
+
+  - alert: BackupStale
+    expr: time() - pve_backup_last_run_timestamp_seconds > 8 * 86400
+    for: 1h
+    labels: {severity: warning}
+    annotations:
+      summary: "Aucun backup vzdump depuis plus de 8 jours"
+      description: "Le dernier log de tâche vzdump date de plus de 8 jours. Le job dominical ne tourne plus ou l'exporter 9188 est aveugle."

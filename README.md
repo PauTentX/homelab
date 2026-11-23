@@ -1,211 +1,94 @@
-# 🏰 Homelab EVA-002 & Architecture Proxmox VE
+# homelab
 
-[![Proxmox VE](https://img.shields.io/badge/Proxmox_VE-9.2-E57000?style=for-the-badge&logo=proxmox&logoColor=white)](https://www.proxmox.com)
-[![TrueNAS SCALE](https://img.shields.io/badge/TrueNAS_SCALE-ZFS-0095D5?style=for-the-badge&logo=truenas&logoColor=white)](https://www.truenas.com)
-[![NixOS](https://img.shields.io/badge/NixOS-Declarative-5277C3?style=for-the-badge&logo=nixos&logoColor=white)](https://nixos.org)
-[![Docker](https://img.shields.io/badge/Docker-Stacks-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+Configuration versionnée de mon homelab : hyperviseur Proxmox VE, stockage TrueNAS SCALE (ZFS),
+stacks Docker et supervision Prometheus/Grafana. Les fichiers sont des copies assainies de ce qui
+tourne réellement : aucun secret, les adresses IP sont remplacées par des noms `*.lan`.
 
-> **Un homelab de production géré comme du code.**  
-> Infrastructure auto-hébergée haute performance articulée autour de l'hyperviseur Proxmox VE (**EVA-002**), du stockage ZFS résilient (**TrueNAS SCALE**), du nœud d'inférence d'IA déclaratif (**EVA-003 NixOS**) et de la domotique centrale (**Home Assistant**).
+Présentation détaillée : <https://laurenttailliez.dev/projects/homelab/>
 
-Retrouvez les projets et réalisations associées sur [laurenttailliez.dev](https://laurenttailliez.dev).
+> Relevé du 23/11/2026. Seuls les invités démarrés sont comptés ; les modèles (`900x`) et les VM
+> arrêtées sont mentionnés à part.
 
----
+## Matériel et état
 
-## 🧭 Philosophie & Principes Directeurs
+| Nœud | Rôle | Matériel | État relevé |
+| :--- | :--- | :--- | :--- |
+| EVA-002 | Proxmox VE 9.2 | Ryzen 7 5700U, 62 Go RAM, NVMe 500 Go + SSD 2 To | 39 LXC et 5 VM démarrés |
+| EVA-001 | TrueNAS SCALE | Pool `BacASable` : miroir 2 × 8 To, cache L2ARC NVMe 1 To | 5,1 Tio utilisés sur 7,1 Tio, dernier scrub sans erreur |
+| Freebox Delta | Passerelle, DHCP | — | Redirige 80/443 vers NPM Plus |
 
-- **Infrastructure as Code (IaC) & Reproductibilité** : Chaque configuration système, règle réseau, unité systemd, composition Docker et configuration NixOS est déclarative, versionnée sous Git et traçable.
-- **Observabilité & Métrologie Découplée** : Collecte continue Prometheus des sondes matérielles (NVMe SMART, cgroups v2, Freebox FTTH, Onduleur Eaton), découplée sur le NAS TrueNAS pour garantir l'indépendance de la supervision même en cas de maintenance de l'hyperviseur.
-- **Résilience & Disponibilité** : Pool ZFS Copy-on-Write en miroir, sauvegardes vzdump hebdomadaires compressées en `zstd`, rétention automatisée et plans de reprise testés.
-- **Défense en Profondeur & Zéro Confiance** : Reverse proxy durci (NPM Plus) avec en-têtes de sécurité stricts (HSTS, CSP), segmentation des conteneurs LXC non privilégiés (`unprivileged: 1`), double facteur (MFA/OIDC), utilisateur de déploiement CI/CD restreint via `rrsync` et politique stricte zéro secret en clair.
-
----
-
-## 🏛️ Architecture Globale de l'Infrastructure
+À part : 3 LXC arrêtés, la VM OPNsense (installée mais arrêtée), les VM de test arrêtées et les
+modèles. Le nœud NixOS EVA-003 est hors service ; sa configuration est archivée sur ma forge Gitea.
 
 ```mermaid
-flowchart TD
-    subgraph WAN [🌐 Réseau Extérieur & Entrées]
-        Internet([🌐 Internet])
-        Freebox[Freebox Delta FTTH 10G-EPON<br/>Passerelle LAN]
-        Internet -->|Fibre 10G-EPON| Freebox
+flowchart LR
+    Internet([Internet]) --> Freebox[Freebox Delta]
+    Freebox -->|80/443| NPM[NPM Plus + CrowdSec<br/>LXC 110]
+    NPM --> Astro[Site Astro<br/>LXC 136]
+    NPM --> Gitea[Gitea<br/>LXC 132]
+    NPM --> Dockge[Hôte Docker<br/>LXC 105]
+    Gitea -->|webhook signé| Astro
+    subgraph TrueNAS[EVA-001 TrueNAS SCALE]
+        ZFS[(Pool BacASable)]
+        Prom[Prometheus] --> AM[Alertmanager] --> Discord([Discord])
+        Prom --> Grafana
     end
-
-    subgraph EdgeSec [🔒 Périphérie & Reverse Proxy]
-        NPM[NPM Plus<br/>Reverse Proxy SSL / HSTS / WAF]
-        Freebox -->|Port Forwarding 80/443| NPM
-    end
-
-    subgraph PVE [🖥️ Hyperviseur : EVA-002 Proxmox VE]
-        CPU[AMD Ryzen 7 5700U - 8C/16T / 64 Go RAM]
-        LVM[(SSD NVMe Crucial P3 - LVM-Thin local-lvm)]
-
-        subgraph CoreLXC [Services Systèmes & Identité]
-            POCKETID[Pocket-ID OIDC]
-            AUTHELIA[Authelia 2FA]
-            WYL[WatchYourLAN ARP]
-        end
-
-        subgraph DevCiCd [Forge & Déploiement CI/CD]
-            GITEA[Gitea Forge Git]
-            ASTRO[Astro Website<br/>Portfolio de Production]
-        end
-
-        subgraph DockerEngine [Dockge & Stacks]
-            DOCKGE[Dockge Engine]
-            RUNNER[Gitea act_runner]
-            IMMICH[Immich Photos & ML]
-            N8N[n8n Automation]
-            HERMES[Hermes AI Agent]
-            UMAMI[Umami Analytics]
-        end
-
-        subgraph MediaApps [Médias & Productivité]
-            RADARR[Radarr]
-            SONARR[Sonarr]
-            PROWLARR[Prowlarr]
-            JELLYSEERR[Jellyseerr]
-            PAPERLESS[Paperless-ngx]
-            GHOST[Ghost]
-        end
-
-        subgraph ProbesPVE [Sondes Locales Métrologie]
-            PVE_EXP[proxmox_exporter.py]
-            SMART_EXP[homelab_smart_probe.py]
-            NODE_EXP[Node Exporter]
-        end
-    end
-
-    subgraph NAS [💾 Stockage & Observabilité : TrueNAS SCALE]
-        ZFS[(Pool ZFS Miroir / ARC / Snapshots)]
-        PROM[Prometheus Server]
-        GRAF[Grafana NOC]
-        ALERT[Alertmanager]
-        NUT[NUT Exporter Onduleur Eaton]
-        BLACKBOX[Blackbox Exporter]
-    end
-
-    subgraph NIXOS [⚡ Nœud Calcul & Inférence IA : EVA-003 NixOS]
-        OLLAMA[Serveur LLM / Inférence Locale]
-        NIX_CONF[Configuration Déclarative NixOS]
-    end
-
-    subgraph DOMOTIQUE [🏠 Domotique : Home Assistant]
-        HASS[Home Assistant OS / Core]
-        ZIGBEE[Passerelle Zigbee & Sondes Énergie]
-    end
-
-    %% Flux Réseau & Proxy
-    NPM -->|Proxy Pass| GITEA
-    NPM -->|Proxy Pass| ASTRO
-    NPM -->|Proxy Pass| GRAF
-    NPM -->|Proxy Pass| DOCKGE
-    NPM -->|Proxy Pass| HASS
-
-    %% Flux CI/CD & Déploiement
-    GITEA -->|Job Trigger| RUNNER
-    RUNNER -->|rsync rrsync SSH chrooté| ASTRO
-
-    %% Stockage NFS / CIFS
-    RADARR -.->|Partage Médias NFS/CIFS| ZFS
-    SONARR -.->|Partage Médias NFS/CIFS| ZFS
-    DOCKGE -.->|Données persistantes| ZFS
-
-    %% Monitoring
-    ProbesPVE -->|Scrape HTTP| PROM
-    PROM --> GRAF
-    PROM --> ALERT
-    BLACKBOX --> PROM
-    NUT --> PROM
-    ALERT -->|Webhooks critiques| DISCORD([📢 Salons Discord Homelab])
+    Dockge -.->|NFS| ZFS
+    Prom -.->|scrape| NPM
+    Prom -.->|scrape| Exporters[Exporters EVA-002]
 ```
 
----
+## Ce qui est en place
 
-## 🖥️ Matrice des Machines & Domaines de Services
+- **Reverse proxy** : NPM Plus (LXC 110) termine le TLS et ajoute HSTS et les en-têtes de sécurité.
+  CrowdSec et son bouncer nginx tournent sur le même conteneur.
+- **Contrôle d'accès** : 5 vhosts sur 17 sont restreints par liste d'accès NPM. Authelia (LXC 113)
+  et Pocket-ID (LXC 138) tournent, mais aucun vhost n'est encore branché en forward-auth.
+- **Forge et CI/CD** : Gitea (LXC 132) avec un `act_runner`. Le site est déployé par un webhook
+  signé HMAC-SHA256 : le conteneur web fait un `git fetch`, compile et remplace le dossier `dist`
+  (voir [docs/ci-cd.md](docs/ci-cd.md)).
+- **Supervision** : Prometheus, Alertmanager et Grafana tournent sur TrueNAS, donc hors de
+  l'hyperviseur surveillé. 39 règles d'alerte chargées (36 noms distincts : 3 alertes onduleur
+  sont définies deux fois) et 6 règles d'enregistrement. Les alertes partent sur Discord.
+- **Sauvegardes** : vzdump chaque dimanche à 01:00 (zstd, mode snapshot, 2 versions gardées) sur
+  le SSD 2 To de l'hyperviseur.
 
-### Nœuds Physiques & Systèmes Hôtes
+## Limites connues
 
-| Machine / Nœud | OS / Système | Rôle Principal | Sous-réseau | Caractéristiques |
-| :--- | :--- | :--- | :--- | :--- |
-| **Freebox Delta** | Freebox OS | Passerelle FTTH 10G-EPON, DHCP local, Switch | LAN `192.168.0.0/24` | Connectivité WAN Fibre 10G |
-| **EVA-002** | Proxmox VE 9.2 | Hyperviseur bare-metal, conteneurs LXC et VMs | LAN `192.168.0.0/24` | AMD Ryzen 7 5700U (8C/16T), 64 Go RAM, SSD NVMe 500 Go |
-| **EVA-001** | TrueNAS SCALE | Stockage central ZFS, Monitoring Prometheus/Grafana | LAN `192.168.0.0/24` | Pool ZFS en miroir, Partages NFS/CIFS |
-| **EVA-003** | NixOS | Nœud de calcul & Inférence IA locale (LLMs) | LAN `192.168.0.0/24` | Déclaratif flakes / configuration NixOS |
-| **Home Assistant** | HAOS / Core | Gestion domotique, suivi des consommations prises Zigbee | LAN `192.168.0.0/24` | Intégration capteurs et métrologie électrique |
+Ce dépôt décrit l'état réel, défauts compris :
 
-### Cartographie par Domaines & Catégories de Services
+- **Pas de copie hors site.** Les sauvegardes vzdump restent sur la même machine que les invités ;
+  aucune réplication ZFS ni synchronisation cloud n'est configurée.
+- **6 LXC privilégiés sur 42**, dont l'hôte Docker (LXC 105).
+- **n8n en HTTP sur le LAN** avec `N8N_SECURE_COOKIE=false`. Cible : passer derrière NPM Plus en HTTPS.
+- **SSO non branché** : Authelia et Pocket-ID ne protègent encore aucun vhost.
+- **Pas d'exercice de restauration documenté** pour l'instant.
+- Les exporters de la stack média (exportarr, qBittorrent) ne sont pas versionnés ici.
 
-| Domaine / Catégorie | Services & Composants | Ce que ça démontre |
-| :--- | :--- | :--- |
-| **Hyperviseur Proxmox VE (EVA-002)** | Découpage en conteneurs LXC légers et VMs ciblées, profils d'énergie Ryzen, bridged networking | Optimisation des ressources bare-metal, haute densité de conteneurs sous cgroups v2, efficience thermique. |
-| **Reverse proxy NPM Plus** | NPM Plus (Nginx Proxy Manager), terminaison TLS Let's Encrypt, HSTS, WAF, filtrage d'en-têtes | Sécurisation du point d'entrée unique, gestion centralisée des certificats SSL/TLS et politiques de sécurité web. |
-| **Forge & CI/CD** | Forge Git locale Gitea, act_runner isolé, déploiement continu rsync restreint via `rrsync` SSH | Chaîne CI/CD entièrement auto-hébergée, isolation des jobs de build et déploiements à privilèges minimaux. |
-| **Automatisation** | n8n, workflows d'orchestration et pipelines automatisés | Interconnexion d'APIs, gestion d'alertes événementielles et automatisation de tâches récurrentes. |
-| **Média** | Stack Servarr (Radarr, Sonarr, Prowlarr, Lidarr, Readarr, Jellyseerr) | Gestion modulaire et automatisée de collections multimédias avec volumes de stockage déportés. |
-| **Observabilité** | Prometheus Server, Grafana NOC, Blackbox Exporter, Alertmanager, sondes locales NVMe/cgroups | Supervision proactive complète, métrologie découplée sur stockage distinct et alertage multi-canal. |
-| **Stockage** | TrueNAS SCALE, pool ZFS Copy-on-Write en miroir, instantanés, partages NFS/CIFS | Résilience des données, intégrité ZFS contre la corruption silencieuse et séparation nette calcul/stockage. |
-| **IA** | EVA-003 NixOS, Ollama, inférence locale LLM, configuration déclarative Flakes | Infrastructure déclarative reproductible pour modèles de langage locaux sans dépendance cloud. |
-| **Domotique** | Home Assistant, passerelle Zigbee, métrologie électrique des prises connectées | Télémétrie énergétique temps réel, corrélation charge CPU / consommation électrique et domotique locale. |
-| **Sécurité** | Authentification 2FA/MFA (Authelia, Pocket-ID), WatchYourLAN (ARP scan), CrowdSec, durcissement SSH | Architecture de défense en profondeur, moindre privilège (`unprivileged: 1`), surveillance réseau et zero-trust. |
-
----
-
-## 🗂️ Arborescence du Dépôt
+## Contenu du dépôt
 
 ```text
 .
-├── .github/
-│   └── workflows/ci.yml           # Pipeline GitHub Actions (Markdown lint, ShellCheck, Gitleaks)
-├── docs/                          # Documentation d'ingénierie détaillée
-│   ├── architecture-reseau.md     # Schéma des flux réseau, reverse proxy, plan d'adressage
-│   ├── stockage-zfs.md            # Pool ZFS miroir, LVM-Thin, ARC, scrubs
-│   ├── monitoring.md              # Prometheus, Grafana NOC, Blackbox, alertes électriques
-│   ├── securite.md                # Durcissement NPM Plus, rrsync restreint, MFA, CrowdSec
-│   └── ci-cd.md                   # Pipeline Gitea Actions (prettier/eslint/astro check/build/rsync)
-├── monitoring/                    # Configurations de la stack de supervision (déportée NAS)
-│   ├── prometheus.yml             # Scraping des sondes Proxmox, NAS, Freebox, Blackbox
-│   ├── blackbox.yml               # Modules de sondage ICMP, HTTP 2xx et certificats SSL
-│   ├── alertmanager.yml           # Règles de routage et webhooks Discord
-│   └── rules/                     # Règles de détection (alertes système, UPS, puissance)
-├── nixos/                         # Configurations déclaratives pour le nœud EVA-003
+├── docs/               architecture réseau, stockage ZFS, supervision, sécurité, CI/CD
+├── monitoring/         prometheus.yml, règles d'alerte, Alertmanager, Blackbox, tableau Grafana
 ├── proxmox/
-│   ├── host/                      # Fichiers de configuration assainis de l'hyperviseur EVA-002
-│   │   ├── interfaces             # Exemple assaini /etc/network/interfaces (bridge vmbr0)
-│   │   └── storage.cfg            # Exemple assaini des pools de stockage locaux et distants
-│   └── lxc/                       # Configurations de référence des conteneurs LXC
-│       ├── README.md              # Documentation des modèles et politique d'assainissement
-│       └── examples/              # 3 exemples commentés (Gitea forge, NPM Plus, Dockge gros volume)
-├── scripts/                       # Outillage système et sondes d'infrastructure
-│   ├── proxmox_exporter.py        # Sonde CPU/RAM/cgroup v2 pour Prometheus (port 9221)
-│   ├── homelab_smart_probe.py     # Sonde NVMe SMART / TBW (port 9188)
-│   └── systemd/                   # Unités systemd des sondes locales
-├── stacks/                        # Définitions Docker Compose assainies (LXC 105 Dockge)
-│   ├── dockge/                    # Stack du gestionnaire Dockge
-│   ├── immich/                    # Stack de sauvegarde et reconnaissance d'images
-│   ├── n8n/                       # Stack d'automatisation et orchestrateur de flux
-│   ├── hermes-agent/              # Stack de l'agent autonome IA
-│   ├── flaresolverr/              # Contournement de protections et Byparr
-│   ├── umami/                     # Métriques web analytics respectueuses de la vie privée
-│   └── gitea-runner/              # Runner d'exécution CI/CD act_runner
-├── CONTRIBUTING.md                # Normes de contribution et conventions de commits
-├── LICENSE                        # Licence MIT
-└── README.md                      # Présentation générale du Homelab
+│   ├── host/           interfaces réseau et storage.cfg de l'hyperviseur
+│   └── lxc/examples/   configurations LXC commentées (105, 110, 132)
+├── scripts/            exporters Prometheus maison (Proxmox, SMART/vzdump) et unités systemd
+└── stacks/             compose Docker en service, images épinglées par digest
 ```
 
----
+L'inventaire complet des LXC reste dans un dépôt privé ; seuls 3 exemples commentés sont publiés.
 
-## 🔒 Confidentialité & Assainissement
+## Conventions
 
-Ce dépôt respecte des règles strictes d'assainissement :
-- **Inventaire complet archivé en privé** : Pour préserver la sécurité de l'infrastructure, l'inventaire exhaustif des conteneurs LXC et configurations brutes d'hôtes est volontairement non publié sur ce dépôt public. Il est conservé et versionné dans un dépôt privé interne dédié à la maintenance et à la reconstruction d'urgence. Seuls 3 exemples de référence documentés et assainis sont présentés dans `proxmox/lxc/examples/`.
-- **Zéro secret** : Tous les mots de passe, tokens API, secrets de sessions et clés privées sont remplacés par des variables d'environnement ou des gabarits `.env.example`.
-- **Aucune IP sensible ni adresse MAC** : Les identifiants matériels sont masqués (`XX:XX:XX:XX:XX:XX`) et les adresses IP individuelles d'hôtes sont remplacées par des variables ou le plan d'adressage global `/24`.
-- **Audit automatisé** : Détection systématique de fuite de tokens ou d'identifiants lors de l'intégration continue via Gitleaks.
+- Images Docker épinglées en `tag@sha256:digest`. Le digest est celui de l'image qui tourne,
+  relevé avec `docker image inspect`. Une mise à jour est donc un changement de digest explicite.
+- Secrets hors du dépôt : chaque stack documente ses variables dans `.env.example`, sans valeur.
+- La CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) bloque en cas d'échec de gitleaks
+  (historique complet), ShellCheck, ruff, de la syntaxe Compose ou de `promtool check`, et
+  refuse toute image non épinglée.
 
----
+## Licence
 
-## 📜 Licence
-
-Projet distribué sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus de précisions.
+MIT, voir [LICENSE](LICENSE).

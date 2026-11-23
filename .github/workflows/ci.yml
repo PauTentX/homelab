@@ -1,45 +1,101 @@
-name: Lint & Security Scan
+name: ci
 
+# Chaque étape échoue franchement : pas de `|| true` ni de `continue-on-error`.
+# Aucune donnée d'événement (titre de PR, message de commit...) n'est injectée dans un `run:`.
 on:
   push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITLEAKS_VERSION: "8.30.1"
+  GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+  RUFF_VERSION: "0.17.3"
 
 jobs:
-  lint-and-validate:
-    name: Markdown Lint & ShellCheck
+  secrets:
+    name: gitleaks (historique complet)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Markdown Lint
-        uses: DavidAnson/markdownlint-cli2-action@v16
-        with:
-          globs: |
-            **/*.md
-        continue-on-error: true
-
-      - name: ShellCheck Scripts
-        run: |
-          if command -v shellcheck >/dev/null 2>&1; then
-            find scripts/ -name "*.sh" -exec shellcheck {} + 2>/dev/null || true
-          else
-            echo "ShellCheck check completed (placeholder)"
-          fi
-
-  secret-detection:
-    name: Gitleaks Secret Detection
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-
-      - name: Run Gitleaks (binaire officiel)
+          persist-credentials: false
+      - name: Installer gitleaks (somme SHA-256 vérifiée)
         run: |
-          V=8.30.1
-          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${V}/gitleaks_${V}_linux_x64.tar.gz" | tar -xz gitleaks
-          ./gitleaks detect --source . --redact -v --no-banner
+          curl -sSfL -o gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tgz" | sha256sum -c -
+          tar -xzf gitleaks.tgz gitleaks
+      - name: Scanner tous les commits
+        run: ./gitleaks git . --redact --no-banner --exit-code 1
+
+  lint:
+    name: ruff, ShellCheck, images épinglées
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: ruff
+        run: |
+          python3 -m pip install --quiet "ruff==${RUFF_VERSION}"
+          ruff check scripts/
+          python3 -m py_compile scripts/*.py
+      - name: ShellCheck
+        run: |
+          mapfile -t files < <(git ls-files '*.sh')
+          if [ "${#files[@]}" -eq 0 ]; then echo "aucun script shell"; exit 0; fi
+          shellcheck "${files[@]}"
+      - name: Images épinglées par digest
+        run: |
+          bad=$(grep -rnE '^\s*image:' stacks/ | grep -vE '@sha256:[0-9a-f]{64}' || true)
+          if [ -n "$bad" ]; then echo "Image sans digest :"; echo "$bad"; exit 1; fi
+          echo "toutes les images sont épinglées"
+
+  compose:
+    name: docker compose config
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Valider chaque stack avec son .env.example
+        run: |
+          for f in stacks/*/compose.yaml; do
+            d=$(dirname "$f")
+            cp "$d/.env.example" "$d/.env"
+            echo "::group::$d"
+            docker compose --project-directory "$d" -f "$f" config --quiet
+            echo "::endgroup::"
+          done
+
+  prometheus:
+    name: promtool, amtool
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Vérifier config et règles avec les images de prod
+        run: |
+          prom=$(grep -oE 'prom/prometheus:[^[:space:]]+' stacks/truenas-monitoring/compose.yaml)
+          am=$(grep -oE 'prom/alertmanager:[^[:space:]]+' stacks/truenas-monitoring/compose.yaml)
+          docker run --rm --entrypoint promtool -v "$PWD/monitoring:/etc/prometheus:ro" "$prom" \
+            check config --syntax-only /etc/prometheus/prometheus.yml
+          docker run --rm --entrypoint promtool -v "$PWD/monitoring:/etc/prometheus:ro" "$prom" \
+            check rules /etc/prometheus/rules/
+          docker run --rm --entrypoint amtool -v "$PWD/monitoring:/etc/alertmanager:ro" "$am" \
+            check-config /etc/alertmanager/alertmanager.yml

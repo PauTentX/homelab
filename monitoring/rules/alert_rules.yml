@@ -1,0 +1,93 @@
+# ==============================================================================
+# alert_rules.yml — Règles d'alertes Prometheus Homelab (Laurent)
+# Consolidation & Durcissement : Staleness, Piles, Onduleur/NUT, Stockage, Watchdog
+# ==============================================================================
+
+groups:
+  - name: watchdog
+    rules:
+      - alert: Watchdog
+        expr: vector(1)
+        labels:
+          severity: none
+        annotations:
+          summary: "Watchdog Dead Man's Switch actif"
+          description: "Cette alerte reste en permanence active (firing) pour garantir l'intégrité du pipeline Prometheus -> Alertmanager."
+
+  - name: domotique-sondes
+    rules:
+      - alert: PileFaibleCapteur
+        expr: ha_battery_percent < 15 and ha_battery_percent >= 5
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pile faible ({{ $value }}%) : {{ $labels.description }}"
+          description: "Le niveau de batterie du capteur {{ $labels.entity }} ({{ $labels.room }}) est à {{ $value }}%. Remplacement à prévoir."
+
+      - alert: PileCritiqueCapteur
+        expr: ha_battery_percent < 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pile critique ({{ $value }}%) : {{ $labels.description }}"
+          description: "Batterie presque épuisée sur {{ $labels.entity }} ({{ $labels.room }}). Remplacer la pile immédiatement."
+
+  - name: onduleur-resilience
+    rules:
+      - alert: OnduleurSurBatterie
+        expr: network_ups_tools_ups_status{flag="OB"} == 1
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Panne secteur : l'onduleur Eaton est sur batterie"
+          description: "Coupure d'alimentation détectée. Autonomie restante estimée : {{ with query \"network_ups_tools_battery_runtime\" }}{{ . | first | value | humanizeDuration }}{{ end }}."
+
+      - alert: OnduleurBatterieFaible
+        expr: network_ups_tools_ups_status{flag="LB"} == 1 or network_ups_tools_battery_charge < 50
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Onduleur : batterie faible (< 50% ou LB)"
+          description: "La charge restante de l'onduleur est à {{ $value }}%. Arrêt propre des serveurs imminent."
+
+      - alert: OnduleurAutonomieFaible
+        expr: network_ups_tools_battery_runtime < 900 and network_ups_tools_ups_status{flag="OB"} == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Onduleur : autonomie restante inférieure à 15 minutes"
+          description: "En coupure secteur, l'autonomie restante est tombée à {{ $value | humanizeDuration }}. Procédure d'arrêt requise."
+
+      - alert: OnduleurSurcharge
+        expr: network_ups_tools_ups_load > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Onduleur surchargé ({{ $value }}%)"
+          description: "La charge de l'onduleur dépasse 80% depuis 5 minutes. Risque de coupure brutale."
+
+  - name: stockage-predictif
+    rules:
+      - alert: SaturationDisquePredictive3Jours
+        expr: predict_linear(node_filesystem_free_bytes{fstype!~"tmpfs|ramfs|overlay"}[4h], 86400 * 3) < 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Saturation disque imminente sous 3 jours : {{ $labels.mountpoint }}"
+          description: "Sur l'hôte {{ $labels.instance }}, le système de fichiers {{ $labels.mountpoint }} sera saturé d'ici 3 jours au rythme d'écriture actuel."
+
+      - alert: UsureNvmeCritique
+        expr: smart_ssd_percentage_used >= 80
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Usure critique NVMe {{ $value }}% : {{ $labels.model }} ({{ $labels.host }})"
+          description: "Le SSD {{ $labels.device }} sur {{ $labels.host }} a atteint {{ $value }}% d'usure NAND (Percentage Used). Remplacement matériel urgent."

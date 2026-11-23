@@ -7,7 +7,6 @@ import http.server
 import socketserver
 import subprocess
 import json
-import time
 
 PORT = 9221
 
@@ -88,9 +87,10 @@ class ProxmoxHandler(http.server.BaseHTTPRequestHandler):
             # 3. Temps CPU cumule (cgroup v2) : base du calcul de puissance par invite
             def _cpu_sec(path):
                 try:
-                    for l in open(path):
-                        if l.startswith("usage_usec"):
-                            return int(l.split()[1]) / 1e6
+                    with open(path) as fh:
+                        for line in fh:
+                            if line.startswith("usage_usec"):
+                                return int(line.split()[1]) / 1e6
                 except Exception:
                     return None
             lines.append("# HELP pve_lxc_cpu_seconds_total Temps CPU cumule du LXC (cgroup cpu.stat)")

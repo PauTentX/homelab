@@ -7,20 +7,36 @@ groups:
     labels: {severity: critical}
     annotations:
       summary: "Coupure secteur : l'onduleur est sur batterie"
-      description: "Arrêt propre automatique planifié à 50 % de batterie restante ou 10 minutes d'autonomie."
-
+      description: "Autonomie restante : {{ with query \"network_ups_tools_battery_runtime\" }}{{ . | first | value | humanizeDuration }}{{ end }}. Arrêt propre automatique à 50 % ou 10 min."
   - alert: OnduleurBatterieFaible
     expr: network_ups_tools_ups_status{flag="LB"} == 1
     for: 0m
     labels: {severity: critical}
     annotations:
-      summary: "Onduleur : batterie critique, coupure imminente"
-      description: "NUT déclenche l'extinction d'urgence immédiate des nœuds."
-
+      summary: "Onduleur : batterie faible, arrêt imminent"
+      description: "NUT va déclencher l'arrêt propre des machines."
+  # OnduleurAlarmeBatterie et OnduleurBatterieAremplacer désactivés à la demande de Laurent
+  # (Batterie physiquement usée générant un flag ALARM permanent 'Battery voltage too low'
+  # qui spammait Discord toutes les 4h via Alertmanager).
+  #
+  # - alert: OnduleurAlarmeBatterie
+  #   expr: network_ups_tools_ups_status{flag="ALARM"} == 1
+  #   for: 30m
+  #   labels: {severity: warning}
+  #   annotations:
+  #     summary: "Onduleur en alarme (Battery voltage too low)"
+  #     description: "La batterie est probablement usée : l'autonomie affichée n'est pas fiable. Prévoir son remplacement."
+  # - alert: OnduleurBatterieAremplacer
+  #   expr: network_ups_tools_ups_status{flag="RB"} == 1
+  #   for: 5m
+  #   labels: {severity: warning}
+  #   annotations:
+  #     summary: "Onduleur : remplacement de batterie demandé"
+  #     description: "Flag RB (Replace Battery) actif."
   - alert: OnduleurSurcharge
     expr: network_ups_tools_ups_load > 80
     for: 5m
     labels: {severity: warning}
     annotations:
       summary: "Onduleur chargé à {{ $value }} %"
-      description: "Surcharge détectée : au-delà de 80 %, l'autonomie s'effondre."
+      description: "Au-delà de 80 %, l'autonomie s'effondre et le risque de coupure augmente."
