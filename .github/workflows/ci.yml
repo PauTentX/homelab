@@ -95,7 +95,8 @@ jobs:
           am=$(grep -oE 'prom/alertmanager:[^[:space:]]+' stacks/truenas-monitoring/compose.yaml)
           docker run --rm --entrypoint promtool -v "$PWD/monitoring:/etc/prometheus:ro" "$prom" \
             check config --syntax-only /etc/prometheus/prometheus.yml
-          docker run --rm --entrypoint promtool -v "$PWD/monitoring:/etc/prometheus:ro" "$prom" \
-            check rules /etc/prometheus/rules/
+          # promtool attend des fichiers : le glob est développé par le shell du conteneur.
+          docker run --rm --entrypoint sh -v "$PWD/monitoring:/etc/prometheus:ro" "$prom" \
+            -c 'promtool check rules /etc/prometheus/rules/*.yml'
           docker run --rm --entrypoint amtool -v "$PWD/monitoring:/etc/alertmanager:ro" "$am" \
             check-config /etc/alertmanager/alertmanager.yml
