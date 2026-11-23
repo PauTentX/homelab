@@ -1,76 +1,80 @@
-# Stockage ZFS & Architecture des Données
+# Stockage et sauvegardes
 
-## 1. Conception du Stockage : Deux Niveaux Complémentaires
+Relevé du 23/11/2026.
 
-L'infrastructure distingue le stockage système hyperviseur à très haute vitesse et le stockage capacitif hautement résilient.
+## TrueNAS SCALE (EVA-001) : pool `BacASable`
 
-```mermaid
-flowchart TD
-    subgraph PVE [🖥️ Stockage Rapide : Hyperviseur EVA-002]
-        NVME[SSD NVMe Crucial P3 500 Go]
-        LOCAL[local : Directory /var/lib/vz<br/>Templates LXC & ISOs]
-        LOCAL_LVM[(local-lvm : LVM-Thin<br/>Rootfs dynamiques des conteneurs)]
-        BACKSHOT[(Backshot-Roulette : LVM<br/>Disques virtuels QEMU)]
-        BACKUP2TO[(backup2to : Directory /mnt/backup2to<br/>Dépôt local sauvegardes vzdump zstd)]
-        
-        NVME --> LOCAL
-        NVME --> LOCAL_LVM
-        NVME --> BACKSHOT
-    end
+| Élément | Valeur |
+| :--- | :--- |
+| Données | Miroir de 2 disques Seagate IronWolf 8 To (`mirror-0`) |
+| Cache de lecture | L2ARC sur un NVMe 1 To |
+| Système | `boot-pool` sur un NVMe 500 Go, séparé |
+| Capacité | 7,27 Tio, dont 5,05 Tio utilisés (69 %) et 2,21 Tio libres |
+| État | `ONLINE`, aucune erreur de lecture, d'écriture ou de somme de contrôle |
 
-    subgraph NAS [💾 Stockage Résilient : TrueNAS SCALE EVA-001]
-        ZFS_POOL[(Pool ZFS BacASable : 7.27 To Utiles<br/>VDEVs Miroir ZFS)]
-        ARC[ZFS ARC Cache RAM]
-        DATA_MEDIA[Dataset /data/media]
-        DATA_APPS[Dataset /data/apps_data]
-        DATA_BACKUPS[Dataset /data/backups]
+**Miroir.** Chaque bloc est écrit sur les deux disques. Le pool survit à la perte de l'un d'eux.
+ZFS stocke une somme de contrôle par bloc : si une copie est corrompue, il le voit à la lecture
+et la répare à partir de l'autre.
 
-        ZFS_POOL --> DATA_MEDIA
-        ZFS_POOL --> DATA_APPS
-        ZFS_POOL --> DATA_BACKUPS
-        ZFS_POOL -.-> ARC
-    end
+**L2ARC.** L'ARC est le cache en RAM de ZFS. Le L2ARC prolonge ce cache sur le NVMe pour les
+lectures répétées. Il ne contient aucune donnée unique : si le NVMe meurt, seul le cache est perdu.
 
-    %% Connexions inter-nœuds
-    LOCAL_LVM -.->|Sauvegarde hebdomadaire| BACKUP2TO
-    LOCAL_LVM -.->|Partage réseau NFS / CIFS| ZFS_POOL
-```
+### Datasets principaux
 
----
+| Dataset | Utilisé | Contenu |
+| :--- | ---: | :--- |
+| `BacASable/BacASable` | 4,96 Tio | Médias et données partagées (partage SMB) |
+| `BacASable/ix-apps` | 84 Gio | Applications TrueNAS, dont la supervision |
+| `BacASable/User` | 65 Gio | Données personnelles |
+| `BacASable/backups` | 3,9 Gio | Sauvegardes Home Assistant (partage SMB dédié) |
+| `BacASable/hermes-backups` | 1,5 Gio | Sauvegardes de l'agent Hermes |
 
-## 2. Le Pool ZFS `BacASable` (7.27 To) sur TrueNAS SCALE
+### Instantanés et scrub
 
-Le cœur capacitif et persistant du homelab est hébergé sur TrueNAS SCALE à travers le pool ZFS nommé **`BacASable`**, totalisant **7.27 To** d'espace exploitable.
+| Tâche | Fréquence | Rétention |
+| :--- | :--- | :--- |
+| Snapshot `BacASable/BacASable` | Tous les jours à 03:00 | 7 jours |
+| Snapshot `BacASable/BacASable` | Le dimanche à 03:30 | 4 semaines |
+| Snapshot `BacASable/User` (récursif) | Tous les jours à 03:20 | 14 jours |
+| Scrub du pool | Le dimanche, si le précédent date de plus de 35 jours | — |
 
-### Pourquoi ZFS ? Principes Fondamentaux
+Un snapshot ZFS est quasi instantané : il fige la liste des blocs sans rien copier, puis grossit
+au fil des modifications. Il protège contre une suppression ou un chiffrement par erreur, pas
+contre la perte du pool, puisqu'il vit sur les mêmes disques.
 
-1. **Copy-on-Write (CoW)** :  
-   ZFS n'écrase jamais une donnée en place. Lorsqu'un bloc est modifié, il est écrit sur un nouvel emplacement libre avant que les pointeurs de métadonnées ne soient mis à jour de façon atomique. Ce mécanisme élimine le risque de corruption en cas de coupure de courant inopinée.
+Le scrub relit tous les blocs et vérifie leurs sommes de contrôle. Dernier passage le
+1er novembre : 9 h 30, 0 octet réparé.
 
-2. **Miroir ZFS (Mirror VDEVs)** :  
-   Le pool est constitué en vdevs de disques en miroir. Cette disposition offre :
-   - Une tolérance aux pannes matérielles (la perte d'un disque ne dégrade pas les données).
-   - Des performances de lecture accrues, les requêtes étant réparties entre les disques du miroir.
-   - Un temps de reconstruction (*resilver*) nettement plus court et moins stressant pour la mécanique que les configurations RAIDZ complexes à large parité.
+## Hyperviseur (EVA-002)
 
-3. **Checksums & Intégrité des Blocs (Auto-guérison / Self-Healing)** :  
-   Chaque bloc écrit est associé à une somme de contrôle (Fletcher4 / SHA-256). Lors de la lecture, ZFS vérifie mathématiquement que la donnée lue correspond au checksum. En cas d'incohérence (*bit rot* ou secteur défectueux silencieux), ZFS lit automatiquement la copie saine sur le miroir et répare le bloc corrompu à la volée.
+| Disque | Usage |
+| :--- | :--- |
+| NVMe 500 Go | Groupe LVM `pve` : système (96 Go), swap (8 Go), pool thin `data` (338 Go) pour les disques des invités |
+| SSD SATA 2 To | Groupe LVM `Backshot-Roulette` : volume `backup-lv` de 500 Go monté sur `/mnt/backup2to` |
 
-4. **ZFS ARC (Adaptive Replacement Cache)** :  
-   La mémoire vive (RAM) du serveur TrueNAS sert de cache intelligent multi-niveaux (combinant récence et fréquence d'accès). Les requêtes de lecture répétées sont servies directement depuis la RAM à débit mémoire sans solliciter les disques mécaniques.
+Le pool **thin** alloue l'espace au fil de l'écriture : un disque virtuel de 32 Go qui contient
+5 Go de données n'en occupe que 5 sur le NVMe.
 
-5. **Snapshots Instantanés & Immuables** :  
-   Grâce au Copy-on-Write, la création d'un snapshot ZFS est instantanée et ne consomme aucun espace initialement. Les snapshots conservent l'historique temporel des datasets, permettant de restaurer un fichier ou un dossier complet en quelques secondes en cas de fausse manipulation ou d'attaque par rançongiciel.
+## Sauvegardes vzdump
 
-6. **Scrubs Périodiques (Contrôle Proactif)** :  
-   Une tâche planifiée de *scrub* balaie régulièrement l'intégralité du pool ZFS pour lire chaque bloc et vérifier son empreinte cryptographique. Tout bloc altéré est immédiatement détecté et réparé avant qu'une seconde panne ne survienne.
+| Paramètre | Valeur |
+| :--- | :--- |
+| Planification | Le dimanche à 01:00 |
+| Mode | `snapshot` : l'invité continue de tourner pendant la sauvegarde |
+| Compression | zstd |
+| Rétention | 2 versions (`keep-last=2`) |
+| Destination | `/mnt/backup2to`, 268 Go utilisés sur 492 |
+| Invités | Liste fixe de 35 vmid |
 
----
+L'exporter [homelab_smart_probe.py](../scripts/homelab_smart_probe.py) publie la date et le
+statut du dernier job, et l'état du système de fichiers de destination. Les alertes
+`BackupJobEchoue`, `BackupStale` et `BackupFsReadonly` s'appuient dessus.
 
-## 3. Stockage Système sur Proxmox VE : LVM-Thin
+## Limites
 
-Sur l'hyperviseur EVA-002, le SSD NVMe Crucial P3 est partitionné de manière pragmatique :
-- **`local`** (`/var/lib/vz`) : Répertoire classique stockant les gabarits de distribution pour LXC (`vztmpl`) et les images ISO.
-- **`local-lvm`** (LVM-Thin) : Fournit des volumes logiques alloués dynamiquement pour les rootfs des conteneurs. Chaque conteneur ne consomme sur le SSD que l'espace réellement écrit, avec le support natif des instantanés pour les sauvegardes `vzdump`.
-- **`nas.local`** (Montage CIFS/NFS) : Point de montage réseau pointant vers le pool `BacASable` de TrueNAS (`truenas.lan`), permettant aux LXC applicatifs (Dockge, Radarr, Sonarr, Readarr) d'accéder aux bibliothèques massives sans alourdir le stockage local du mini-PC.
-- **`backup2to`** (`/mnt/backup2to`) : Stockage cible réservé aux archives `vzdump` compressées en `zstd` générées chaque dimanche matin.
+- **Pas de copie hors site.** Les sauvegardes vzdump sont sur la même machine que les invités, et
+  TrueNAS n'a aucune tâche de réplication, de synchronisation cloud ou de rsync.
+- **Liste d'invités figée.** Le job vise des vmid précis. Quatre LXC démarrés n'y sont pas :
+  107, 141, 143 et 160. Choisir « tous les invités » avec des exclusions éviterait l'oubli.
+- 2 versions seulement : une corruption remarquée après deux semaines n'a plus de copie saine.
+- Aucun test de restauration documenté.

@@ -1,82 +1,80 @@
-# Monitoring & Observabilité (NOC)
+# Supervision
 
-## 1. Architecture de Métrologie Découplée
+Relevé du 23/11/2026. Les fichiers de [monitoring/](../monitoring) sont ceux chargés en
+production.
 
-Le principe architectural clé du monitoring homelab est le **découplage** : la stack de supervision (Prometheus, Grafana, Alertmanager) réside sur le serveur TrueNAS SCALE (EVA-001) et non sur l'hyperviseur de production (EVA-002).
+## Où ça tourne, et pourquoi
 
-```mermaid
-flowchart LR
-    subgraph SOND_PVE [🖥️ Sondes Proxmox EVA-002]
-        PVE_EXP[proxmox_exporter.py : 9221<br/>cgroups v2 CPU/RAM]
-        SMART_EXP[homelab_smart_probe.py : 9188<br/>NVMe SMART & TBW]
-        NODE_PVE[node-exporter : 9100]
-    end
+Prometheus, Alertmanager, Grafana, Blackbox et les exporters réseau tournent sur TrueNAS (stack
+[truenas-monitoring](../stacks/truenas-monitoring/compose.yaml)), pas sur l'hyperviseur. Si
+EVA-002 tombe, la supervision reste debout et peut le signaler.
 
-    subgraph SOND_NET [🌐 Sondes Périphérie & Énergie]
-        BLACKBOX[Blackbox Exporter : 9115<br/>ICMP Ping & HTTP 2xx]
-        NUT_EXP[NUT Exporter : 9199<br/>Onduleur Eaton USB]
-        FBX_EXP[freebox_exporter : 9105<br/>FTTH 10G & SFP temp]
-    end
+| Composant | Version | Réglage |
+| :--- | :--- | :--- |
+| Prometheus | 3.15.0 | Collecte toutes les 15 s, rétention 30 jours |
+| Alertmanager | 0.34.1 | Envoi vers Discord |
+| Grafana | 13.2.2 | Tableau réseau versionné : [network_dashboard.json](../monitoring/network_dashboard.json) |
+| Blackbox exporter | 0.28.0 | Sondes ICMP et HTTP |
 
-    subgraph NOC_NAS [💾 Centre de Supervision - TrueNAS SCALE]
-        PROM[Prometheus Server : 9090<br/>Scrape 15s / Rétention TSDB]
-        ALERT[Alertmanager : 9093<br/>Groupement & Déduplication]
-        GRAF[Grafana NOC : 3030<br/>Tableaux de Bord Métier]
-    end
+## Cibles
 
-    subgraph NOTIF [📢 Notifications]
-        DISCORD[Webhooks Canaux Discord]
-    end
+29 cibles actives, toutes `up` au moment du relevé.
 
-    SOND_PVE -->|HTTP Scrape 15s| PROM
-    SOND_NET -->|HTTP Scrape 15s| PROM
-    PROM -->|Alert Rules| ALERT
-    PROM -->|Data Source PromQL| GRAF
-    ALERT -->|Webhooks sécurisés| DISCORD
-```
+| Job | Source |
+| :--- | :--- |
+| `proxmox-ve` | [proxmox_exporter.py](../scripts/proxmox_exporter.py) sur EVA-002 (:9221) : état, CPU et RAM des LXC et VM |
+| `smart-proxmox` | [homelab_smart_probe.py](../scripts/homelab_smart_probe.py) sur EVA-002 (:9188) : santé du NVMe, sauvegardes vzdump |
+| `node-exporter-proxmox`, `node-exporter-truenas` | Métriques système des deux hôtes |
+| `zfs-truenas`, `smart-homelab` | État du pool et des disques du NAS |
+| `nut-ups` | Onduleur, via NUT |
+| `freebox-delta` | Lien WAN de la Freebox |
+| `blackbox-network` (10), `blackbox-http` (4) | Ping des équipements, disponibilité et certificat des sites |
+| `exportarr-*` (4), `qbittorrent` | Stack média |
+| `hermes-tokens` | Consommation de l'agent IA |
 
----
+Les deux exporters maison sont des scripts Python sans dépendance externe, lancés par systemd
+(unités dans [scripts/systemd](../scripts/systemd)). Si la collecte échoue, `proxmox_exporter.py`
+répond `pve_exporter_status 0` au lieu de planter : la panne reste visible dans Prometheus.
 
-## 2. Collecteurs & Exporters Spécialisés
+## Règles
 
-### 1. `proxmox_exporter.py` (Port 9221)
-Sonde développée sur mesure en Python, interrogeant directement l'arborescence `/sys/fs/cgroup/` (cgroups v2) et l'API Proxmox VE :
-- Collecte par conteneur LXC et machine virtuelle : temps CPU cumulé (`pve_lxc_cpu_seconds_total`), mémoire résidente et swaps.
-- Évite les surcharges liées à des requêtes API REST répétées en lisant directement les compteurs du noyau Linux.
+39 règles d'alerte réparties dans 5 fichiers, plus 6 règles d'enregistrement.
 
-### 2. `homelab_smart_probe.py` (Port 9188)
-Supervision de l'état d'usure des disques NVMe et SATA :
-- Métriques collectées : température du contrôleur, pourcentage d'usure de vie (`percentage_used`), octets écrits cumulés (TBW - Terabytes Written) et erreurs critiques de média.
+| Fichier | Alertes | Exemples |
+| :--- | ---: | :--- |
+| [alerts.yml](../monitoring/rules/alerts.yml) | 22 | `CibleInjoignable`, `ZpoolNonSain`, `ServiceHttpDown`, `CertificatSslExpire`, `ConteneurProxmoxArrete` |
+| [alert_rules.yml](../monitoring/rules/alert_rules.yml) | 9 | Onduleur, piles des capteurs, disque plein prévu sous 3 jours, `Watchdog` |
+| [backup.yml](../monitoring/rules/backup.yml) | 3 | `BackupJobEchoue`, `BackupStale`, `BackupFsReadonly` |
+| [ups.yml](../monitoring/rules/ups.yml) | 3 | Mêmes noms que les alertes onduleur de `alert_rules.yml` |
+| [hermes.yml](../monitoring/rules/hermes.yml) | 2 | Coût journalier, exporter arrêté |
 
-### 3. Blackbox Exporter (Port 9115)
-Sonde synthétique externe vérifiant en continu :
-- **ICMP Ping** : Détecte en moins de 10 secondes l'injoignabilité d'un hôte ou d'une passerelle.
-- **HTTP 2xx & SSL** : Vérifie la validité des certificats Let's Encrypt et la bonne réponse HTTP des services web exposés via NPM Plus.
+Presque toutes les alertes ont une durée `for` (de 10 s à 1 h) : la condition doit durer avant
+de déclencher, une valeur isolée ne suffit pas. `Watchdog` (`vector(1)`) est toujours active : si
+elle disparaît de Discord, c'est la chaîne d'alerte qui est cassée.
 
-### 4. NUT Exporter (Onduleur Eaton)
-Supervise l'alimentation sans interruption (ASI / UPS) :
-- État de charge de la batterie, tension d'entrée secteur, puissance délivrée en Watts et autonomie restante estimée.
+### Consommation estimée par invité
 
----
+[power.yml](../monitoring/rules/power.yml) répartit la puissance de l'hyperviseur entre ses
+invités. La mesure vient d'une prise Zigbee lue par Home Assistant : environ 14 W au relevé, pour
+un socle de 12 W.
 
-## 3. Modèle Mathématique de Répartition de Puissance Électrique
+1. `pve:node_idle_power_watts` : le socle, pris comme 5ᵉ centile des 3 derniers jours.
+2. Le socle est réparti au prorata de la RAM de chaque invité.
+3. Le reste (puissance actuelle moins le socle) est réparti au prorata du CPU consommé, calculé par
+   `rate()` sur `pve_*_cpu_seconds_total`.
 
-L'hyperviseur EVA-002 est raccordé à une prise connectée Zigbee mesurant en temps réel la consommation électrique globale ($P_{\text{mesurée}}$, typiquement ~25W au repos). Afin d'imputer précisément cette consommation à chaque service, le modèle suivant est implémenté sous Prometheus/Grafana :
+C'est un modèle, pas une mesure par invité : il sert à repérer un invité gourmand.
 
-$$P_{\text{guest}} = \left( \frac{\text{RAM}_{\text{guest}}}{\sum \text{RAM}_{\text{all}}} \times P_{\text{idle}} \right) + \left( \frac{\text{CPU\_Usage}_{\text{guest}}}{\sum \text{CPU\_Usage}_{\text{all}}} \times (P_{\text{mesurée}} - P_{\text{idle}}) \right)$$
+## Routage des alertes
 
-- **Socle Fixe ($P_{\text{idle}}$)** : Représente la consommation plancher de la carte mère, de la mémoire vive et de la dissipation passive (estimée par le 5e percentile glissant sur 72h). Il est réparti proportionnellement à la RAM allouée à chaque conteneur.
-- **Part Dynamique** : Correspond au surcroît d'énergie consommé lors des phases de calcul (compilation CI/CD, encodage vidéo, reconnaissance faciale Immich). Elle est attribuée au prorata exact des cycles CPU cgroups v2 consommés par le conteneur.
+[alertmanager.yml](../monitoring/alertmanager.yml) regroupe par `alertname` et `instance`, et
+relance toutes les 4 h (1 h pour `critical`). L'URL du webhook Discord est lue dans un fichier
+(`webhook_url_file`) monté depuis l'hôte, jamais écrite dans le dépôt.
 
----
+## Limites
 
-## 4. Règles d'Alerte Majeures (Alertmanager)
-
-| Règle | Sévérité | Déclenchement | Playbook d'Action |
-| :--- | :---: | :--- | :--- |
-| `HoteInjoignablePing` | **Critical** | Échec ICMP Blackbox > 2 min | Notification Discord urgente, vérification alimentation et switch |
-| `ConteneurProxmoxArrete` | **Warning** | Conteneur à l'état stoppé > 5 min | Signalement pour vérification d'un arrêt volontaire ou crash |
-| `ZpoolNonSain` | **Critical** | `zpool_health != 1` > 1 min | Exécution immédiate de `zpool status -v` sur TrueNAS |
-| `ZpoolPresquePlein` | **Warning** | Remplissage pool > 80 % | Purge des snapshots anciens et nettoyage des données temporaires |
-| `OnduleurSurBatterie` | **Critical** | Flag `OB == 1` > 10 s | Décompte du temps d'autonomie restante ; extinction propre si < 30 % |
-| `RyzenTctlElevee` | **Warning** | Température CPU > 85°C > 10 min | Contrôle de la ventilation et application de profil `ryzen-power-tuning` |
+- Les alertes onduleur existent en double (`alert_rules.yml` et `ups.yml`) : une coupure produit
+  deux notifications.
+- `Watchdog` n'est reliée à aucun service externe : si Prometheus ou Alertmanager s'arrête, rien
+  ne prévient automatiquement.
+- Les exporters de la stack média ne sont pas versionnés ici.

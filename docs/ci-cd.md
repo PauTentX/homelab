@@ -1,88 +1,73 @@
-# Pipeline CI/CD & Déploiement Continu
+# CI/CD
 
-## 1. Vue d'Ensemble du Flux de Déploiement
+Relevé du 23/11/2026.
 
-Le homelab intègre une chaîne d'intégration et de déploiement continu (CI/CD) entièrement souveraine, hébergée en local et automatisant la validation du code, les tests statiques, le build et la publication en production.
+## Forge : Gitea (LXC 132)
+
+Les dépôts de travail sont sur Gitea. Les jobs CI tournent dans `act_runner` (stack
+[gitea-runner](../stacks/gitea-runner/compose.yaml), hébergée par le LXC 105). Chaque job s'exécute
+dans un conteneur Docker éphémère, avec la syntaxe des workflows GitHub Actions.
+
+## Site laurenttailliez.dev
+
+### Intégration continue
+
+Le workflow `.gitea/workflows/ci.yaml` du dépôt du site tourne à chaque push et à chaque pull
+request :
+
+1. `npm ci` : installation exacte depuis `package-lock.json` ;
+2. `npm run format:check` (Prettier) ;
+3. `npm run lint` (ESLint) ;
+4. `npm run check` (`astro check` : types et templates) ;
+5. `npm run build`.
+
+### Déploiement
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    actor Dev as Développeur (Laurent / Hermes)
-    participant Gitea as Gitea Forge (LXC 132 : gitea.lan)
-    participant Runner as act_runner (Docker Dockge LXC 105)
-    participant Prod as Serveur Astro (LXC 136 : astro.lan)
-
-    Dev->>Gitea: git push origin main
-    Gitea->>Runner: Déclenchement Webhook Job CI/CD
-    
-    activate Runner
-    Note over Runner: 1. Contrôle Lint Prettier<br/>2. Analyse Statique ESLint<br/>3. Validation Typage astro check<br/>4. Compilation Statique astro build
-    Runner->>Runner: Génération des fichiers compilés dist/
-    
-    Note over Runner,Prod: Connexion SSH restreinte (clé ed25519)
-    Runner->>Prod: rsync -avz --delete dist/ deploy@astro.lan:/home/astro/www/dist
-    deactivate Runner
-    
-    activate Prod
-    Note over Prod: Interception par rrsync chrooté<br/>Écriture atomique dans /dist<br/>Nginx sert la nouvelle version
-    Prod-->>Dev: Site en ligne disponible immédiatement !
-    deactivate Prod
+    participant Dev as Poste
+    participant Gitea as Gitea (LXC 132)
+    participant Hook as webhook :9000 (LXC 136)
+    participant Web as nginx :8080 (LXC 136)
+    Dev->>Gitea: git push main
+    Gitea->>Hook: POST signé HMAC-SHA256
+    Hook->>Hook: vérifie la signature et ref = main
+    Hook->>Hook: deploy.sh (utilisateur astro)
+    Hook-->>Web: bascule de dist/
 ```
 
----
+Le LXC 136 fait tourner [webhook](https://github.com/adnanh/webhook), que Gitea appelle à chaque
+push sur `main`. Le script `deploy.sh` :
 
-## 2. Étapes Clés du Pipeline Gitea Actions
+1. prend un verrou `flock` : deux pushs rapprochés ne lancent pas deux builds en même temps ;
+2. fait `git fetch` puis `git reset --hard origin/main` : le dossier de travail reflète exactement
+   la branche ;
+3. relance `npm ci` seulement si l'empreinte de `package-lock.json` a changé ;
+4. compile dans `.dist-new` et vérifie que `index.html` existe ;
+5. remplace `dist/` par `.dist-new`.
 
-Chaque commit poussé sur la branche principale déclenche un workflow rigoureux composé de 4 phases séquentielles :
+nginx sert `/home/astro/www/dist`. Si le build échoue, l'ancien `dist/` reste en place : le site
+ne sert jamais une version à moitié compilée. Le dernier déploiement a pris 27 secondes, `npm ci`
+compris.
 
-### Étape 1 : Formatage & Style de Code (`prettier`)
-Vérifie la conformité stylistique des fichiers source JavaScript, TypeScript, Astro et JSON selon les règles du projet :
-```bash
-npx prettier --check .
-```
-Garantit qu'aucun écart de mise en forme n'est introduit dans le dépôt de production.
+### Limite
 
-### Étape 2 : Analyse Statique (`eslint`)
-Détecte les erreurs de syntaxe, les variables inutilisées, les anti-patterns et les potentielles failles de sécurité au niveau du code applicatif :
-```bash
-npx eslint . --ext .js,.ts,.astro
-```
+Le webhook part au moment du push, en parallèle de la CI : **un commit qui échoue en CI est quand
+même déployé** s'il compile. Pour corriger, il faudrait déclencher le déploiement à la fin du
+workflow, après les vérifications.
 
-### Étape 3 : Contrôle de Typage & Validité (`astro check`)
-Valide la cohérence des types TypeScript dans les composants `.astro` et les fichiers utilitaires, ainsi que l'intégrité des liens et propriétés de composants :
-```bash
-npx astro check
-```
-Tout problème de typage bloque immédiatement le pipeline, interdisant tout déploiement cassé.
+## Ce dépôt (GitHub)
 
-### Étape 4 : Compilation de Production (`astro build`)
-Compile l'ensemble des pages statiques, génère les assets CSS/JS optimisés, applique la minification et crée le dossier de distribution `dist/` prêt pour la production :
-```bash
-npm run build
-```
+[.github/workflows/ci.yml](../.github/workflows/ci.yml) fait échouer le commit si une étape échoue :
 
----
+| Étape | Contrôle |
+| :--- | :--- |
+| gitleaks | Secrets dans tout l'historique (`fetch-depth: 0`). Le binaire est vérifié par SHA-256 avant exécution |
+| ShellCheck | Scripts shell |
+| ruff | Exporters Python (règles dans `ruff.toml`) |
+| `docker compose config` | Syntaxe de chaque stack, avec son `.env.example` |
+| Épinglage | Refuse toute image sans `@sha256:` |
+| `promtool`, `amtool` | Configuration Prometheus, règles et Alertmanager, avec les images de production |
 
-## 3. Déploiement Atomique & Sécurisé (`rsync` via `rrsync`)
-
-Une fois la compilation réussie avec succès, les fichiers du dossier `dist/` sont synchronisés de manière différentielle vers le conteneur LXC 136 (`astro-eva-002`) :
-
-```bash
-rsync -avz --delete \
-  -e "ssh -i /tmp/deploy_key -o StrictHostKeyChecking=accept-new" \
-  ./dist/ deploy@astro.lan:/home/astro/www/dist/
-```
-
-### Pourquoi `rsync` avec l'option `--delete` ?
-- **Synchronisation Différentielle** : Seuls les fichiers modifiés sont transférés à travers le réseau local, réduisant le temps de déploiement à moins de 3 secondes.
-- **Nettoyage Automatique (`--delete`)** : Les anciens fichiers obsolètes générés lors de précédents builds sont immédiatement purgés sur le serveur cible.
-- **Zéro Interruption de Service (Downtime)** : Le serveur Nginx sert les requêtes en continu pendant la mise à jour atomique des fichiers statiques.
-
----
-
-## 4. Configuration du Runner CI/CD (`act_runner`)
-
-Le runner CI/CD fonctionne dans la stack Docker Dockge (LXC 105) sous forme de conteneur `gitea/act_runner` :
-- Il communique localement avec l'instance Gitea (LXC 132 : `gitea.lan:3000`).
-- Il instancie des conteneurs de build Node.js éphémères (`node:22-bookworm`).
-- La clé privée SSH temporaire de déploiement lui est fournie sous forme de secret de repository sécurisé, injectée uniquement pendant l'étape de déploiement.
+Les actions GitHub sont épinglées par SHA de commit : un tag peut être déplacé par le mainteneur
+de l'action, un SHA non.
